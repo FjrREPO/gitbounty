@@ -100,3 +100,97 @@ describe("GitHubClient integration (mocked API)", () => {
     expect(state.closesIssues).toEqual([]);
   });
 });
+
+describe("issue and pull request operations (mocked API)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lists open bounty issues and filters out pull requests", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          { number: 7, title: "Fix login", body: "Steps...", labels: [{ name: "bounty" }] },
+          { number: 8, title: "A PR", body: "", labels: [], pull_request: {} },
+          { number: 9, title: "No body", body: null, labels: [{ name: "bounty" }] },
+        ]),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const issues = await new GitHubClient().listOpenIssues("acme", "demo", "bounty");
+    expect(issues.map((i) => i.number)).toEqual([7, 9]);
+    expect(issues[1]?.body).toBe("");
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain("/repos/acme/demo/issues?state=open&labels=bounty");
+  });
+
+  it("reads repository metadata", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            default_branch: "main",
+            clone_url: "https://github.com/acme/demo.git",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const info = await new GitHubClient().getRepoInfo("acme", "demo");
+    expect(info).toEqual({
+      defaultBranch: "main",
+      cloneUrl: "https://github.com/acme/demo.git",
+    });
+  });
+
+  it("finds an existing open PR by head branch", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify([{ number: 12 }]), { status: 200 })),
+    );
+    const num = await new GitHubClient().findOpenPullByHead("acme", "demo", "gitbounty/issue-7");
+    expect(num).toBe(12);
+  });
+
+  it("returns null when no PR exists for the head branch", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 })),
+    );
+    const num = await new GitHubClient().findOpenPullByHead("acme", "demo", "gitbounty/issue-7");
+    expect(num).toBeNull();
+  });
+
+  it("creates a pull request via POST with json body", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ number: 21, html_url: "https://github.com/acme/demo/pull/21" }),
+          { status: 201 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pr = await new GitHubClient("tok").createPullRequest("acme", "demo", {
+      title: "Fix login",
+      body: "Fixes #7",
+      head: "gitbounty/issue-7",
+      base: "main",
+    });
+
+    expect(pr).toEqual({ number: 21, htmlUrl: "https://github.com/acme/demo/pull/21" });
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { method: string; body: string; headers: Record<string, string> },
+    ];
+    expect(url).toBe("https://api.github.com/repos/acme/demo/pulls");
+    expect(init.method).toBe("POST");
+    expect(init.headers["content-type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toMatchObject({ head: "gitbounty/issue-7", base: "main" });
+  });
+});
