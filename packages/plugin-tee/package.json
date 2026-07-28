@@ -1,0 +1,31 @@
+{
+  "name": "@gitbounty/plugin-tee",
+  "version": "0.1.0",
+  "description": "Confidential verification path: PR merge checks inside a TEE (Google Confidential Space)",
+  "license": "MIT",
+  "author": "FjrREPO",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@gitbounty/core": "workspace:*",
+    "@gitbounty/plugin-github": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}
