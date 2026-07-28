@@ -118,6 +118,9 @@ importers:
       '@gitbounty/plugin-github':
         specifier: workspace:*
         version: link:../plugin-github
+      viem:
+        specifier: ^2.55.10
+        version: 2.55.10(typescript@7.0.2)
     devDependencies:
       '@types/node':
         specifier: ^26.1.2

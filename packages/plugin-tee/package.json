@@ -1,7 +1,7 @@
 {
   "name": "@gitbounty/plugin-tee",
   "version": "0.1.0",
-  "description": "Confidential verification path: PR merge checks inside a TEE (Google Confidential Space)",
+  "description": "Confidential Compute verifier: proves GitHub merges inside a TEE and signs escrow payouts",
   "license": "MIT",
   "author": "FjrREPO",
   "type": "module",
@@ -18,11 +18,13 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
   },
   "dependencies": {
     "@gitbounty/core": "workspace:*",
-    "@gitbounty/plugin-github": "workspace:*"
+    "@gitbounty/plugin-github": "workspace:*",
+    "viem": "^2.55.10"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
