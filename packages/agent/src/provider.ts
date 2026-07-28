@@ -1,63 +1,120 @@
-import { ClaudeFixGenerator } from "./solver.js";
-import { OpenAIFixGenerator } from "./solver-openai.js";
+import { ClaudeFixGenerator } from "./generators/claude.js";
+import { DeepSeekFixGenerator } from "./generators/deepseek.js";
+import { GeminiFixGenerator } from "./generators/gemini.js";
+import { GlmFixGenerator } from "./generators/glm.js";
+import { GrokFixGenerator } from "./generators/grok.js";
+import { KimiFixGenerator } from "./generators/kimi.js";
+import { MistralFixGenerator } from "./generators/mistral.js";
+import { OpenAIFixGenerator } from "./generators/openai.js";
+import {
+  OpenAICompatibleFixGenerator,
+  type OpenAICompatibleFixGeneratorOptions,
+} from "./generators/openai-compatible.js";
+import { QwenFixGenerator } from "./generators/qwen.js";
 import type { FixGenerator } from "./types.js";
 
 export interface ProviderDefinition {
   /** Name accepted by GITBOUNTY_LLM. */
   name: string;
-  /** "anthropic" uses the Claude SDK; "openai-compatible" covers everything else. */
-  kind: "anthropic" | "openai-compatible";
   apiKeyEnv: string;
   modelEnv: string;
-  defaultModel?: string;
   /** Overridable endpoint for openai-compatible providers. */
   baseUrlEnv?: string;
-  defaultBaseUrl?: string;
+  /** Default model, surfaced for logging; the generator owns the value. */
+  defaultModel?: string;
+  create(options: OpenAICompatibleFixGeneratorOptions): FixGenerator;
 }
 
 /**
- * LLM provider registry, ordered by preference. Most AI vendors expose an
- * OpenAI-compatible API, so supporting another one (DeepSeek, Kimi, ...) is
- * a single declarative entry here — or zero entries via the `custom` slot.
+ * LLM provider registry, ordered by preference. Each vendor has its own
+ * generator in `generators/`; adding another AI is one small generator file
+ * plus one entry here — or zero code via the `custom` slot.
  */
 export const PROVIDERS: readonly ProviderDefinition[] = [
   {
     name: "claude",
-    kind: "anthropic",
     apiKeyEnv: "ANTHROPIC_API_KEY",
     modelEnv: "ANTHROPIC_MODEL",
+    create: ({ model, apiKey }) => new ClaudeFixGenerator({ model, apiKey }),
   },
   {
     name: "openai",
-    kind: "openai-compatible",
     apiKeyEnv: "OPENAI_API_KEY",
     modelEnv: "OPENAI_MODEL",
+    defaultModel: OpenAIFixGenerator.DEFAULT_MODEL,
+    create: (options) => new OpenAIFixGenerator(options),
   },
   {
-    name: "glm",
-    kind: "openai-compatible",
-    apiKeyEnv: "GLM_API_KEY",
-    modelEnv: "GLM_MODEL",
-    defaultModel: "glm-4.6",
-    baseUrlEnv: "GLM_BASE_URL",
-    defaultBaseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    name: "deepseek",
+    apiKeyEnv: "DEEPSEEK_API_KEY",
+    modelEnv: "DEEPSEEK_MODEL",
+    baseUrlEnv: "DEEPSEEK_BASE_URL",
+    defaultModel: DeepSeekFixGenerator.DEFAULT_MODEL,
+    create: (options) => new DeepSeekFixGenerator(options),
   },
   {
     name: "qwen",
-    kind: "openai-compatible",
     apiKeyEnv: "QWEN_API_KEY",
     modelEnv: "QWEN_MODEL",
-    defaultModel: "qwen3-coder-plus",
     baseUrlEnv: "QWEN_BASE_URL",
-    defaultBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    defaultModel: QwenFixGenerator.DEFAULT_MODEL,
+    create: (options) => new QwenFixGenerator(options),
+  },
+  {
+    name: "glm",
+    apiKeyEnv: "GLM_API_KEY",
+    modelEnv: "GLM_MODEL",
+    baseUrlEnv: "GLM_BASE_URL",
+    defaultModel: GlmFixGenerator.DEFAULT_MODEL,
+    create: (options) => new GlmFixGenerator(options),
+  },
+  {
+    name: "kimi",
+    apiKeyEnv: "KIMI_API_KEY",
+    modelEnv: "KIMI_MODEL",
+    baseUrlEnv: "KIMI_BASE_URL",
+    defaultModel: KimiFixGenerator.DEFAULT_MODEL,
+    create: (options) => new KimiFixGenerator(options),
+  },
+  {
+    name: "grok",
+    apiKeyEnv: "XAI_API_KEY",
+    modelEnv: "XAI_MODEL",
+    baseUrlEnv: "XAI_BASE_URL",
+    defaultModel: GrokFixGenerator.DEFAULT_MODEL,
+    create: (options) => new GrokFixGenerator(options),
+  },
+  {
+    name: "gemini",
+    apiKeyEnv: "GEMINI_API_KEY",
+    modelEnv: "GEMINI_MODEL",
+    baseUrlEnv: "GEMINI_BASE_URL",
+    defaultModel: GeminiFixGenerator.DEFAULT_MODEL,
+    create: (options) => new GeminiFixGenerator(options),
+  },
+  {
+    name: "mistral",
+    apiKeyEnv: "MISTRAL_API_KEY",
+    modelEnv: "MISTRAL_MODEL",
+    baseUrlEnv: "MISTRAL_BASE_URL",
+    defaultModel: MistralFixGenerator.DEFAULT_MODEL,
+    create: (options) => new MistralFixGenerator(options),
   },
   {
     // Any other OpenAI-compatible endpoint: set LLM_BASE_URL + LLM_MODEL.
     name: "custom",
-    kind: "openai-compatible",
     apiKeyEnv: "LLM_API_KEY",
     modelEnv: "LLM_MODEL",
     baseUrlEnv: "LLM_BASE_URL",
+    create: (options) => {
+      if (!options.baseURL) {
+        throw new Error('provider "custom" requires LLM_BASE_URL');
+      }
+      if (!options.model) {
+        throw new Error('provider "custom" requires LLM_MODEL');
+      }
+      return new OpenAICompatibleFixGenerator(options);
+    },
   },
 ];
 
@@ -98,18 +155,32 @@ export function chooseProvider(env: Env): ProviderChoice {
 
 /** Instantiates the FixGenerator for the chosen provider. */
 export function createGenerator(env: Env): FixGenerator {
-  const { definition, model } = resolve(env);
-  if (definition.kind === "anthropic") {
-    return new ClaudeFixGenerator({ model });
-  }
+  const { definition } = resolve(env);
+  return definition.create({
+    model: env[definition.modelEnv],
+    apiKey: env[definition.apiKeyEnv],
+    baseURL: definition.baseUrlEnv ? env[definition.baseUrlEnv] : undefined,
+  });
+}
 
-  const baseURL =
-    (definition.baseUrlEnv ? env[definition.baseUrlEnv] : undefined) ?? definition.defaultBaseUrl;
-  if (definition.baseUrlEnv && !definition.defaultBaseUrl && !baseURL) {
-    throw new Error(`provider "${definition.name}" requires ${definition.baseUrlEnv}`);
+/**
+ * BYOK entry point: builds a generator from a user-supplied key and model
+ * choice, independent of environment variables. This is what a hosted
+ * bring-your-own-key + model-picker flow calls per user.
+ */
+export function createGeneratorFor(
+  providerName: string,
+  options: OpenAICompatibleFixGeneratorOptions & { apiKey: string },
+): FixGenerator {
+  const definition = PROVIDERS.find((p) => p.name === providerName);
+  if (!definition) {
+    const names = PROVIDERS.map((p) => p.name).join(", ");
+    throw new Error(`unknown provider: "${providerName}" (available: ${names})`);
   }
-  if (!model && !definition.defaultModel && definition.name !== "openai") {
-    throw new Error(`provider "${definition.name}" requires ${definition.modelEnv}`);
-  }
-  return new OpenAIFixGenerator({ model, baseURL, apiKey: env[definition.apiKeyEnv] });
+  return definition.create(options);
+}
+
+/** Providers with their default models, for model-picker UIs. */
+export function listProviders(): { name: string; defaultModel: string | undefined }[] {
+  return PROVIDERS.map((p) => ({ name: p.name, defaultModel: p.defaultModel }));
 }

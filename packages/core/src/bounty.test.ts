@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canTransition, isExpired, rewardInTokenWei, transition } from "./bounty.js";
+import { canTransition, isExpired, rewardInTokenWei, transition, weiToToken } from "./bounty.js";
 import type { Bounty, PriceQuote } from "./types.js";
 
 const bounty = (status: Bounty["status"]): Bounty => ({
@@ -77,5 +77,16 @@ describe("rewardInTokenWei", () => {
   it("rejects a zero or negative quote", () => {
     expect(() => rewardInTokenWei(100, quote(0n))).toThrow(/invalid FTSO quote/);
     expect(() => rewardInTokenWei(100, quote(-1n))).toThrow(/invalid FTSO quote/);
+  });
+});
+
+describe("weiToToken", () => {
+  it("rounds wei to four decimals by default", () => {
+    expect(weiToToken(2500n * 10n ** 18n)).toBe(2500);
+    expect(weiToToken(1_23456n * 10n ** 13n)).toBe(1.2345);
+  });
+
+  it("supports custom precision", () => {
+    expect(weiToToken(15n * 10n ** 17n, 1)).toBe(1.5);
   });
 });

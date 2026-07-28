@@ -46,7 +46,7 @@ export ANTHROPIC_API_KEY=sk-ant-...        # fix generation (Claude, preferred)
 node packages/agent/dist/main.js
 ```
 
-The LLM is pluggable: `ANTHROPIC_API_KEY` (Claude), `OPENAI_API_KEY`, `GLM_API_KEY`, `QWEN_API_KEY`, or any OpenAI-compatible endpoint via `LLM_API_KEY` + `LLM_BASE_URL` + `LLM_MODEL`. Force one with `GITBOUNTY_LLM`; override models with `<PROVIDER>_MODEL`.
+The LLM is pluggable — set any one key: `ANTHROPIC_API_KEY` (Claude, preferred), `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `QWEN_API_KEY`, `GLM_API_KEY`, `KIMI_API_KEY`, `XAI_API_KEY` (Grok), `GEMINI_API_KEY`, `MISTRAL_API_KEY`, or any OpenAI-compatible endpoint via `LLM_API_KEY` + `LLM_BASE_URL` + `LLM_MODEL`. Force one with `GITBOUNTY_LLM`; override models with `<PROVIDER>_MODEL`.
 
 Optional: `GITBOUNTY_LABEL` (default `bounty`), `GITBOUNTY_NETWORK` (default `coston2`), `GITBOUNTY_PAYOUT_ADDRESS`.
 

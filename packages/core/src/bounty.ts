@@ -27,6 +27,12 @@ export function isExpired(bounty: Bounty, nowUnix: number): boolean {
   return bounty.status === "open" && nowUnix >= bounty.expiresAt;
 }
 
+/** Approximate token value of a wei amount, rounded to `decimals` places. */
+export function weiToToken(wei: bigint, decimals = 4): number {
+  const scale = 10n ** BigInt(18 - decimals);
+  return Number(wei / scale) / 10 ** decimals;
+}
+
 /**
  * Converts a USD-denominated reward into token units (wei) using an FTSO quote.
  * The quote value is `price * 10^decimals` for 1 token in USD.
