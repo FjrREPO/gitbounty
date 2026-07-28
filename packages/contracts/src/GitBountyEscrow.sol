@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.36;
 
 import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {IWeb2JsonVerification} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IGitBountyEscrow} from "./interfaces/IGitBountyEscrow.sol";
+import {EthSignedMessage} from "./libraries/EthSignedMessage.sol";
+import {FtsoRewardMath} from "./libraries/FtsoRewardMath.sol";
+import {GitHubApi} from "./libraries/GitHubApi.sol";
 
 /// @title GitBountyEscrow
 /// @notice Escrows FLR rewards for GitHub issues. A bounty is paid out when a
@@ -15,101 +22,65 @@ import {IWeb2JsonVerification} from "@flarenetwork/flare-periphery-contracts/cos
 ///         Rewards may be denominated in USD; the FLR owed is computed at
 ///         payout time from the FTSOv2 FLR/USD feed, with any surplus
 ///         refunded to the funder.
-contract GitBountyEscrow {
-    enum Status {
-        None,
-        Open,
-        Paid,
-        Reclaimed
+/// @dev    UUPS upgradeable with ERC-7201 namespaced storage.
+contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    using FtsoRewardMath for FtsoV2Interface;
+
+    /// @custom:storage-location erc7201:gitbounty.storage.Escrow
+    struct EscrowStorage {
+        FtsoV2Interface ftsoV2;
+        IWeb2JsonVerification fdcVerification;
+        address teeSigner;
+        uint256 nextBountyId;
+        mapping(uint256 bountyId => Bounty) bounties;
+        mapping(uint256 bountyId => mapping(address claimant => Claim)) claims;
     }
 
-    struct Bounty {
-        address funder;
-        uint64 issueNumber;
-        uint64 expiresAt;
-        Status status;
-        /// @dev 0 means a fixed-FLR bounty: the full locked amount is paid.
-        uint128 rewardUsdCents;
-        uint256 amount;
-        /// @dev "owner/name", used to bind FDC proofs to this repository.
-        string repo;
+    // keccak256(abi.encode(uint256(keccak256("gitbounty.storage.Escrow")) - 1))
+    //   & ~bytes32(uint256(0xff))
+    bytes32 private constant ESCROW_STORAGE_LOCATION =
+        0xc604cee9f5357e050c59656a9ceae59d074a2c1a92b4870f7d3b414e41a68300;
+
+    function _storage() private pure returns (EscrowStorage storage $) {
+        assembly {
+            $.slot := ESCROW_STORAGE_LOCATION
+        }
     }
 
-    /// @dev Mirrors the Web2Json abiSignature used by the off-chain stack.
-    struct PrMergeData {
-        bool merged;
-        string author;
-        uint256 prNumber;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    struct Claim {
-        uint256 prNumber;
-        bytes32 githubLoginHash;
+    function initialize(
+        FtsoV2Interface ftsoV2_,
+        IWeb2JsonVerification fdcVerification_,
+        address teeSigner_,
+        address owner_
+    ) external initializer {
+        __Ownable_init(owner_);
+
+        EscrowStorage storage $ = _storage();
+        $.ftsoV2 = ftsoV2_;
+        $.fdcVerification = fdcVerification_;
+        $.teeSigner = teeSigner_;
+        $.nextBountyId = 1;
     }
 
-    event BountyCreated(
-        uint256 indexed id,
-        address indexed funder,
-        string repo,
-        uint64 issueNumber,
-        uint256 amount,
-        uint128 rewardUsdCents,
-        uint64 expiresAt
-    );
-    event ClaimRegistered(
-        uint256 indexed id, address indexed claimant, uint256 prNumber, bytes32 githubLoginHash
-    );
-    event BountyPaid(uint256 indexed id, address indexed recipient, uint256 paid, uint256 refunded);
-    event BountyReclaimed(uint256 indexed id);
+    // -- bounty lifecycle --------------------------------------------------
 
-    error ZeroReward();
-    error PastExpiry();
-    error NotOpen();
-    error NoClaim();
-    error InvalidProof();
-    error UrlMismatch();
-    error PrNotMerged();
-    error AuthorMismatch();
-    error InvalidSignature();
-    error NotFunder();
-    error NotExpired();
-    error TransferFailed();
-
-    /// @notice FTSOv2 feed id for FLR/USD (category 0x01 + ASCII "FLR/USD").
-    bytes21 public constant FLR_USD_FEED = 0x01464c522f55534400000000000000000000000000;
-
-    FtsoV2Interface public immutable ftsoV2;
-    IWeb2JsonVerification public immutable fdcVerification;
-    /// @notice Address derived from the enclave key of the TEE verifier.
-    address public immutable teeSigner;
-
-    uint256 public nextBountyId = 1;
-    mapping(uint256 bountyId => Bounty) public bounties;
-    mapping(uint256 bountyId => mapping(address claimant => Claim)) public claims;
-
-    constructor(FtsoV2Interface _ftsoV2, IWeb2JsonVerification _fdcVerification, address _teeSigner) {
-        ftsoV2 = _ftsoV2;
-        fdcVerification = _fdcVerification;
-        teeSigner = _teeSigner;
-    }
-
-    /// @notice Locks `msg.value` FLR as the reward for a GitHub issue.
-    /// @param repo Repository as "owner/name".
-    /// @param issueNumber The GitHub issue the bounty is attached to.
-    /// @param rewardUsdCents USD-denominated reward in cents; 0 pays the full
-    ///        locked amount without FTSO conversion.
-    /// @param expiresAt Unix time after which the funder can reclaim.
-    function createBounty(
-        string calldata repo,
-        uint64 issueNumber,
-        uint128 rewardUsdCents,
-        uint64 expiresAt
-    ) external payable returns (uint256 id) {
+    /// @inheritdoc IGitBountyEscrow
+    function createBounty(string calldata repo, uint64 issueNumber, uint128 rewardUsdCents, uint64 expiresAt)
+        external
+        payable
+        returns (uint256 id)
+    {
         if (msg.value == 0) revert ZeroReward();
         if (expiresAt <= block.timestamp) revert PastExpiry();
 
-        id = nextBountyId++;
-        bounties[id] = Bounty({
+        EscrowStorage storage $ = _storage();
+        id = $.nextBountyId++;
+        $.bounties[id] = Bounty({
             funder: msg.sender,
             issueNumber: issueNumber,
             expiresAt: expiresAt,
@@ -121,67 +92,55 @@ contract GitBountyEscrow {
         emit BountyCreated(id, msg.sender, repo, issueNumber, msg.value, rewardUsdCents, expiresAt);
     }
 
-    /// @notice Links the caller's wallet to a GitHub login and the PR expected
-    ///         to resolve the bounty. Required before an FDC claim so the
-    ///         attested PR author can be matched to a payout address.
+    /// @inheritdoc IGitBountyEscrow
     function registerClaim(uint256 bountyId, uint256 prNumber, bytes32 githubLoginHash) external {
-        if (bounties[bountyId].status != Status.Open) revert NotOpen();
-        claims[bountyId][msg.sender] = Claim({prNumber: prNumber, githubLoginHash: githubLoginHash});
+        EscrowStorage storage $ = _storage();
+        if ($.bounties[bountyId].status != Status.Open) revert NotOpen();
+        $.claims[bountyId][msg.sender] = Claim({prNumber: prNumber, githubLoginHash: githubLoginHash});
         emit ClaimRegistered(bountyId, msg.sender, prNumber, githubLoginHash);
     }
 
-    /// @notice Claims a bounty with an FDC Web2Json attestation proving the
-    ///         registered PR is merged and authored by the registered login.
+    /// @inheritdoc IGitBountyEscrow
     function claimWithFdcProof(uint256 bountyId, IWeb2Json.Proof calldata proof) external {
-        Bounty storage bounty = bounties[bountyId];
-        if (bounty.status != Status.Open) revert NotOpen();
+        EscrowStorage storage $ = _storage();
+        Bounty storage bounty = _openBounty($, bountyId);
 
-        Claim memory claim = claims[bountyId][msg.sender];
+        Claim memory claim = $.claims[bountyId][msg.sender];
         if (claim.githubLoginHash == bytes32(0)) revert NoClaim();
 
-        if (!fdcVerification.verifyWeb2Json(proof)) revert InvalidProof();
+        if (!$.fdcVerification.verifyWeb2Json(proof)) revert InvalidProof();
 
         // Bind the attestation to this bounty's repository and registered PR:
         // the attested URL must be exactly the GitHub API endpoint for them.
-        string memory expectedUrl = string.concat(
-            "https://api.github.com/repos/", bounty.repo, "/pulls/", _toString(claim.prNumber)
-        );
+        string memory expectedUrl = GitHubApi.pullRequestUrl(bounty.repo, claim.prNumber);
         if (keccak256(bytes(proof.data.requestBody.url)) != keccak256(bytes(expectedUrl))) {
             revert UrlMismatch();
         }
 
-        PrMergeData memory pr =
-            abi.decode(proof.data.responseBody.abiEncodedData, (PrMergeData));
+        PrMergeData memory pr = abi.decode(proof.data.responseBody.abiEncodedData, (PrMergeData));
         if (!pr.merged) revert PrNotMerged();
         if (keccak256(bytes(pr.author)) != claim.githubLoginHash) revert AuthorMismatch();
 
-        _payout(bountyId, bounty, msg.sender);
+        _payout($, bountyId, bounty, msg.sender);
     }
 
-    /// @notice Claims a bounty with a payout authorization signed inside the
-    ///         TEE. The enclave has already verified the merge and the
-    ///         contributor's identity; nothing sensitive appears on-chain.
-    function claimWithTeeProof(uint256 bountyId, address recipient, bytes calldata signature)
-        external
-    {
-        Bounty storage bounty = bounties[bountyId];
-        if (bounty.status != Status.Open) revert NotOpen();
+    /// @inheritdoc IGitBountyEscrow
+    function claimWithTeeProof(uint256 bountyId, address recipient, bytes calldata signature) external {
+        EscrowStorage storage $ = _storage();
+        Bounty storage bounty = _openBounty($, bountyId);
 
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encode(block.chainid, address(this), bountyId, recipient))
-            )
-        );
-        if (_recover(digest, signature) != teeSigner) revert InvalidSignature();
+        bytes32 innerHash = keccak256(abi.encode(block.chainid, address(this), bountyId, recipient));
+        if (EthSignedMessage.recover(innerHash, signature) != $.teeSigner) {
+            revert InvalidSignature();
+        }
 
-        _payout(bountyId, bounty, recipient);
+        _payout($, bountyId, bounty, recipient);
     }
 
-    /// @notice Returns the escrow to the funder once the bounty has expired.
+    /// @inheritdoc IGitBountyEscrow
     function reclaim(uint256 bountyId) external {
-        Bounty storage bounty = bounties[bountyId];
-        if (bounty.status != Status.Open) revert NotOpen();
+        EscrowStorage storage $ = _storage();
+        Bounty storage bounty = _openBounty($, bountyId);
         if (msg.sender != bounty.funder) revert NotFunder();
         if (block.timestamp < bounty.expiresAt) revert NotExpired();
 
@@ -190,17 +149,63 @@ contract GitBountyEscrow {
         emit BountyReclaimed(bountyId);
     }
 
+    // -- administration ----------------------------------------------------
+
+    /// @notice Rotates the TEE verifier's enclave key.
+    function setTeeSigner(address newSigner) external onlyOwner {
+        EscrowStorage storage $ = _storage();
+        emit TeeSignerUpdated($.teeSigner, newSigner);
+        $.teeSigner = newSigner;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    // -- views -------------------------------------------------------------
+
+    /// @inheritdoc IGitBountyEscrow
+    function getBounty(uint256 bountyId) external view returns (Bounty memory) {
+        return _storage().bounties[bountyId];
+    }
+
+    /// @inheritdoc IGitBountyEscrow
+    function getClaim(uint256 bountyId, address claimant) external view returns (Claim memory) {
+        return _storage().claims[bountyId][claimant];
+    }
+
+    /// @inheritdoc IGitBountyEscrow
+    function nextBountyId() external view returns (uint256) {
+        return _storage().nextBountyId;
+    }
+
+    /// @inheritdoc IGitBountyEscrow
+    function teeSigner() external view returns (address) {
+        return _storage().teeSigner;
+    }
+
+    function ftsoV2() external view returns (FtsoV2Interface) {
+        return _storage().ftsoV2;
+    }
+
+    function fdcVerification() external view returns (IWeb2JsonVerification) {
+        return _storage().fdcVerification;
+    }
+
+    // -- internals ---------------------------------------------------------
+
+    function _openBounty(EscrowStorage storage $, uint256 bountyId) private view returns (Bounty storage bounty) {
+        bounty = $.bounties[bountyId];
+        if (bounty.status != Status.Open) revert NotOpen();
+    }
+
     /// @dev Pays the reward. USD-denominated bounties convert at the live
     ///      FTSOv2 FLR/USD price; any surplus goes back to the funder.
-    function _payout(uint256 bountyId, Bounty storage bounty, address recipient) private {
+    function _payout(EscrowStorage storage $, uint256 bountyId, Bounty storage bounty, address recipient) private {
         bounty.status = Status.Paid;
 
         uint256 paid = bounty.amount;
         uint256 refund = 0;
         if (bounty.rewardUsdCents > 0) {
-            (uint256 priceWei,) = ftsoV2.getFeedByIdInWei(FLR_USD_FEED);
-            // priceWei is USD per FLR with 18 decimals; cents scale by 1e16.
-            uint256 owed = (uint256(bounty.rewardUsdCents) * 1e16 * 1e18) / priceWei;
+            uint256 owed = $.ftsoV2.usdCentsToFlrWei(bounty.rewardUsdCents);
             if (owed < paid) {
                 refund = paid - owed;
                 paid = owed;
@@ -217,34 +222,5 @@ contract GitBountyEscrow {
     function _transfer(address to, uint256 amount) private {
         (bool ok,) = to.call{value: amount}("");
         if (!ok) revert TransferFailed();
-    }
-
-    function _recover(bytes32 digest, bytes calldata signature) private pure returns (address) {
-        if (signature.length != 65) revert InvalidSignature();
-        bytes32 r = bytes32(signature[0:32]);
-        bytes32 s = bytes32(signature[32:64]);
-        uint8 v = uint8(signature[64]);
-        address signer = ecrecover(digest, v, r, s);
-        if (signer == address(0)) revert InvalidSignature();
-        return signer;
-    }
-
-    function _toString(uint256 value) private pure returns (string memory) {
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits--;
-            buffer[digits] = bytes1(uint8(48 + (value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }
