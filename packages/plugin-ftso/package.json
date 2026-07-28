@@ -21,7 +21,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@gitbounty/core": "workspace:*"
+    "@flarenetwork/flare-periphery-contract-artifacts": "^0.1.52",
+    "@gitbounty/core": "workspace:*",
+    "viem": "^2.55.10"
   },
   "devDependencies": {
     "typescript": "^7.0.2"
