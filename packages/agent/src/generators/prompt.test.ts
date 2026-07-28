@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildFixPrompt, parseGeneratedFix } from "./solver.js";
-import type { FixTask } from "./types.js";
+import type { FixTask } from "../types.js";
+import { buildFixPrompt, parseGeneratedFix } from "./prompt.js";
 
 const task: FixTask = {
   repo: { owner: "acme", repo: "demo" },
