@@ -24,13 +24,7 @@ packages/
   plugin-fdc/     Web2Json attestation requests
   plugin-ftso/    FTSOv2 price provider via FlareContractRegistry
   plugin-tee/     Confidential merge verifier
-docs/
-  BUSINESS_MODEL.md
 ```
-
-## Business model
-
-Protocol fee (2.5%) enforced by the escrow contract at settlement, a paid confidential tier for private repos (TEE), and agent-as-a-service subscriptions. Details in [docs/BUSINESS_MODEL.md](docs/BUSINESS_MODEL.md).
 
 ## Development
 
