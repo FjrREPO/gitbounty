@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { FixGenerator, FixTask, GeneratedFix } from "./types.js";
 
-const FIX_SCHEMA = {
+export const FIX_SCHEMA = {
   type: "object",
   properties: {
     summary: {
