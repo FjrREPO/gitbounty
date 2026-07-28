@@ -35,4 +35,4 @@ jobs:
 
       - name: Contract tests
         working-directory: packages/contracts
-        run: forge test -vv
+        run: forge fmt --check && forge test -vv
