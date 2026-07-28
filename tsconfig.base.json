@@ -15,5 +15,6 @@
     "isolatedModules": true,
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": ["**/dist", "**/node_modules", "**/*.test.ts"]
 }
