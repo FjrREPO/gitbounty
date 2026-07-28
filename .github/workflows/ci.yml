@@ -19,6 +19,8 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - uses: foundry-rs/foundry-toolchain@v1
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -30,3 +32,7 @@ jobs:
 
       - name: Test
         run: pnpm exec vitest run
+
+      - name: Contract tests
+        working-directory: packages/contracts
+        run: forge test -vv
