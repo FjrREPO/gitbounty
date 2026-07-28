@@ -48,7 +48,16 @@ node packages/agent/dist/main.js
 
 Optional: `GITBOUNTY_LABEL` (default `bounty`), `GITBOUNTY_NETWORK` (default `coston2`), `GITBOUNTY_PAYOUT_ADDRESS`.
 
-Deployed against Coston2. Quality gates run on pre-commit, pre-push, and CI.
+Quality gates run on pre-commit, pre-push, and CI (Biome, vitest, `forge fmt`, `forge test`).
+
+## Deployment (Coston2)
+
+| Contract | Address |
+| --- | --- |
+| `GitBountyEscrow` (UUPS proxy) | [`0xa8adefe2c8f0f71a585a73c1259997f593f9e463`](https://coston2-explorer.flare.network/address/0xa8adefe2c8f0f71a585a73c1259997f593f9e463) |
+| Implementation | [`0x9daf66b75d348d4f90b125a282bbfa608ecec13c`](https://coston2-explorer.flare.network/address/0x9daf66b75d348d4f90b125a282bbfa608ecec13c) |
+
+Source verified on the Coston2 explorer. FtsoV2 and FdcVerification are resolved through the FlareContractRegistry at deploy time.
 
 ## License
 
