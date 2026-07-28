@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { OpenAICompatibleFixGenerator } from "./generators/base.js";
 import { ClaudeFixGenerator } from "./generators/claude.js";
-import { OpenAICompatibleFixGenerator } from "./generators/openai-compatible.js";
 import {
   chooseProvider,
   createGenerator,

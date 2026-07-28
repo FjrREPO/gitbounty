@@ -1,8 +1,5 @@
 // Mistral — OpenAI-compatible endpoint with vendor defaults baked in.
-import {
-  OpenAICompatibleFixGenerator,
-  type OpenAICompatibleFixGeneratorOptions,
-} from "./openai-compatible.js";
+import { OpenAICompatibleFixGenerator, type OpenAICompatibleFixGeneratorOptions } from "./base.js";
 
 export class MistralFixGenerator extends OpenAICompatibleFixGenerator {
   static readonly DEFAULT_MODEL = "codestral-latest";

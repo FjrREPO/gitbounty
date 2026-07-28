@@ -1,3 +1,7 @@
+import {
+  OpenAICompatibleFixGenerator,
+  type OpenAICompatibleFixGeneratorOptions,
+} from "./generators/base.js";
 import { ClaudeFixGenerator } from "./generators/claude.js";
 import { DeepSeekFixGenerator } from "./generators/deepseek.js";
 import { GeminiFixGenerator } from "./generators/gemini.js";
@@ -6,10 +10,6 @@ import { GrokFixGenerator } from "./generators/grok.js";
 import { KimiFixGenerator } from "./generators/kimi.js";
 import { MistralFixGenerator } from "./generators/mistral.js";
 import { OpenAIFixGenerator } from "./generators/openai.js";
-import {
-  OpenAICompatibleFixGenerator,
-  type OpenAICompatibleFixGeneratorOptions,
-} from "./generators/openai-compatible.js";
 import { QwenFixGenerator } from "./generators/qwen.js";
 import type { FixGenerator } from "./types.js";
 

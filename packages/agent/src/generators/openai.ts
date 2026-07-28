@@ -1,8 +1,5 @@
 // OpenAI — uses the SDK's default endpoint with the vendor default model.
-import {
-  OpenAICompatibleFixGenerator,
-  type OpenAICompatibleFixGeneratorOptions,
-} from "./openai-compatible.js";
+import { OpenAICompatibleFixGenerator, type OpenAICompatibleFixGeneratorOptions } from "./base.js";
 
 export class OpenAIFixGenerator extends OpenAICompatibleFixGenerator {
   static readonly DEFAULT_MODEL = "gpt-5.1";
