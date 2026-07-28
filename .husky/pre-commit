@@ -1,0 +1,6 @@
+if [ "$(git config user.name)" != "FjrREPO" ]; then
+  echo "pre-commit: git user.name must be FjrREPO (got '$(git config user.name)')" >&2
+  exit 1
+fi
+
+pnpm exec biome check --staged --no-errors-on-unmatched
