@@ -1,11 +1,11 @@
 // Glm — OpenAI-compatible endpoint with vendor defaults baked in.
-import { OpenAICompatibleFixGenerator, type OpenAICompatibleFixGeneratorOptions } from "./base.js";
+import { BaseFixGenerator, type BaseFixGeneratorOptions } from "./base.js";
 
-export class GlmFixGenerator extends OpenAICompatibleFixGenerator {
+export class GlmFixGenerator extends BaseFixGenerator {
   static readonly DEFAULT_MODEL = "glm-4.6";
   static readonly DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4";
 
-  constructor(options: OpenAICompatibleFixGeneratorOptions = {}) {
+  constructor(options: BaseFixGeneratorOptions = {}) {
     super({
       ...options,
       model: options.model ?? GlmFixGenerator.DEFAULT_MODEL,

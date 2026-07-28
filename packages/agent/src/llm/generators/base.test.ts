@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 import { describe, expect, it, vi } from "vitest";
-import type { FixTask } from "../types.js";
-import { OpenAICompatibleFixGenerator } from "./base.js";
+import type { FixTask } from "../../types.js";
+import { BaseFixGenerator } from "./base.js";
 
 const task: FixTask = {
   repo: { owner: "acme", repo: "demo" },
@@ -25,9 +25,9 @@ function clientReturning(message: Record<string, unknown>): OpenAI {
   } as unknown as OpenAI;
 }
 
-describe("OpenAICompatibleFixGenerator", () => {
+describe("BaseFixGenerator", () => {
   it("parses a structured completion", async () => {
-    const generator = new OpenAICompatibleFixGenerator({
+    const generator = new BaseFixGenerator({
       model: "gpt-test",
       client: clientReturning({ content: JSON.stringify(fix), refusal: null }),
     });
@@ -35,7 +35,7 @@ describe("OpenAICompatibleFixGenerator", () => {
   });
 
   it("throws on a refusal", async () => {
-    const generator = new OpenAICompatibleFixGenerator({
+    const generator = new BaseFixGenerator({
       model: "gpt-test",
       client: clientReturning({ content: null, refusal: "cannot comply" }),
     });
@@ -43,7 +43,7 @@ describe("OpenAICompatibleFixGenerator", () => {
   });
 
   it("throws on an empty completion", async () => {
-    const generator = new OpenAICompatibleFixGenerator({
+    const generator = new BaseFixGenerator({
       model: "gpt-test",
       client: clientReturning({ content: null, refusal: null }),
     });
@@ -51,8 +51,8 @@ describe("OpenAICompatibleFixGenerator", () => {
   });
 });
 
-describe("OpenAICompatibleFixGenerator base", () => {
+describe("BaseFixGenerator base", () => {
   it("requires a model", () => {
-    expect(() => new OpenAICompatibleFixGenerator({ apiKey: "k" })).toThrow(/model is required/);
+    expect(() => new BaseFixGenerator({ apiKey: "k" })).toThrow(/model is required/);
   });
 });
