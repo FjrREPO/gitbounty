@@ -9,6 +9,10 @@ export {
 export { type AgentConfig, loadConfig } from "./config.js";
 export { type ContextBudget, collectRepoContext, isTextCandidate } from "./context.js";
 export {
+  OpenAICompatibleFixGenerator,
+  type OpenAICompatibleFixGeneratorOptions,
+} from "./generators/base.js";
+export {
   ClaudeFixGenerator,
   type ClaudeFixGeneratorOptions,
 } from "./generators/claude.js";
@@ -19,10 +23,6 @@ export { GrokFixGenerator } from "./generators/grok.js";
 export { KimiFixGenerator } from "./generators/kimi.js";
 export { MistralFixGenerator } from "./generators/mistral.js";
 export { OpenAIFixGenerator } from "./generators/openai.js";
-export {
-  OpenAICompatibleFixGenerator,
-  type OpenAICompatibleFixGeneratorOptions,
-} from "./generators/openai-compatible.js";
 export { buildFixPrompt, FIX_SCHEMA, parseGeneratedFix } from "./generators/prompt.js";
 export { QwenFixGenerator } from "./generators/qwen.js";
 export {

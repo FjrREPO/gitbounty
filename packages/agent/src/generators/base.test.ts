@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 import { describe, expect, it, vi } from "vitest";
 import type { FixTask } from "../types.js";
-import { OpenAICompatibleFixGenerator } from "./openai-compatible.js";
+import { OpenAICompatibleFixGenerator } from "./base.js";
 
 const task: FixTask = {
   repo: { owner: "acme", repo: "demo" },
