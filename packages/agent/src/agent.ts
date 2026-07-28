@@ -1,5 +1,5 @@
 import type { PriceProvider } from "@gitbounty/core";
-import { rewardInTokenWei } from "@gitbounty/core";
+import { rewardInTokenWei, weiToToken } from "@gitbounty/core";
 import { FLR_USD } from "@gitbounty/plugin-ftso";
 import type { IssueSummary } from "@gitbounty/plugin-github";
 import type { AgentConfig } from "./config.js";
@@ -142,7 +142,7 @@ export class BountyAgent {
     }
     try {
       const quote = await this.deps.price.getQuote(FLR_USD);
-      const flr = Number(rewardInTokenWei(usd, quote) / 10n ** 14n) / 10 ** 4;
+      const flr = weiToToken(rewardInTokenWei(usd, quote));
       const price = Number(quote.value) / 10 ** quote.decimals;
       return `Bounty: $${usd} ≈ ${flr} FLR (FTSOv2 FLR/USD @ $${price} on ${this.config.network})`;
     } catch {
