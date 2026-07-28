@@ -25,7 +25,8 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@gitbounty/core": "workspace:*",
     "@gitbounty/plugin-ftso": "workspace:*",
-    "@gitbounty/plugin-github": "workspace:*"
+    "@gitbounty/plugin-github": "workspace:*",
+    "openai": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
