@@ -1,8 +1,8 @@
 import OpenAI from "openai";
-import type { FixGenerator, FixTask, GeneratedFix } from "../types.js";
-import { buildFixPrompt, FIX_SCHEMA, parseGeneratedFix } from "./prompt.js";
+import type { FixGenerator, FixTask, GeneratedFix } from "../../types.js";
+import { buildFixPrompt, FIX_SCHEMA, parseGeneratedFix } from "../prompt.js";
 
-export interface OpenAICompatibleFixGeneratorOptions {
+export interface BaseFixGeneratorOptions {
   client?: OpenAI;
   model?: string;
   /** Point at any OpenAI-compatible endpoint (OpenAI, GLM, Qwen, DeepSeek, ...). */
@@ -16,13 +16,15 @@ export interface OpenAICompatibleFixGeneratorOptions {
  * and endpoint. Uses the same prompt, schema, and validation as the Claude
  * generator.
  */
-export class OpenAICompatibleFixGenerator implements FixGenerator {
+export class BaseFixGenerator implements FixGenerator {
   private readonly client: OpenAI;
   private readonly model: string;
 
-  constructor(options: OpenAICompatibleFixGeneratorOptions = {}) {
+  constructor(options: BaseFixGeneratorOptions = {}) {
     if (!options.model) {
-      throw new Error("model is required for an OpenAI-compatible generator");
+      throw new Error(
+        "model is required: pass options.model or use a vendor generator with a default",
+      );
     }
     this.client =
       options.client ?? new OpenAI({ apiKey: options.apiKey, baseURL: options.baseURL });

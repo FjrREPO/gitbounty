@@ -1,11 +1,11 @@
 // Grok — OpenAI-compatible endpoint with vendor defaults baked in.
-import { OpenAICompatibleFixGenerator, type OpenAICompatibleFixGeneratorOptions } from "./base.js";
+import { BaseFixGenerator, type BaseFixGeneratorOptions } from "./base.js";
 
-export class GrokFixGenerator extends OpenAICompatibleFixGenerator {
+export class GrokFixGenerator extends BaseFixGenerator {
   static readonly DEFAULT_MODEL = "grok-code-fast-1";
   static readonly DEFAULT_BASE_URL = "https://api.x.ai/v1";
 
-  constructor(options: OpenAICompatibleFixGeneratorOptions = {}) {
+  constructor(options: BaseFixGeneratorOptions = {}) {
     super({
       ...options,
       model: options.model ?? GrokFixGenerator.DEFAULT_MODEL,

@@ -1,7 +1,5 @@
-import {
-  OpenAICompatibleFixGenerator,
-  type OpenAICompatibleFixGeneratorOptions,
-} from "./generators/base.js";
+import type { FixGenerator } from "../types.js";
+import { BaseFixGenerator, type BaseFixGeneratorOptions } from "./generators/base.js";
 import { ClaudeFixGenerator } from "./generators/claude.js";
 import { DeepSeekFixGenerator } from "./generators/deepseek.js";
 import { GeminiFixGenerator } from "./generators/gemini.js";
@@ -11,7 +9,6 @@ import { KimiFixGenerator } from "./generators/kimi.js";
 import { MistralFixGenerator } from "./generators/mistral.js";
 import { OpenAIFixGenerator } from "./generators/openai.js";
 import { QwenFixGenerator } from "./generators/qwen.js";
-import type { FixGenerator } from "./types.js";
 
 export interface ProviderDefinition {
   /** Name accepted by GITBOUNTY_LLM. */
@@ -22,7 +19,7 @@ export interface ProviderDefinition {
   baseUrlEnv?: string;
   /** Default model, surfaced for logging; the generator owns the value. */
   defaultModel?: string;
-  create(options: OpenAICompatibleFixGeneratorOptions): FixGenerator;
+  create(options: BaseFixGeneratorOptions): FixGenerator;
 }
 
 /**
@@ -113,7 +110,7 @@ export const PROVIDERS: readonly ProviderDefinition[] = [
       if (!options.model) {
         throw new Error('provider "custom" requires LLM_MODEL');
       }
-      return new OpenAICompatibleFixGenerator(options);
+      return new BaseFixGenerator(options);
     },
   },
 ];
@@ -170,7 +167,7 @@ export function createGenerator(env: Env): FixGenerator {
  */
 export function createGeneratorFor(
   providerName: string,
-  options: OpenAICompatibleFixGeneratorOptions & { apiKey: string },
+  options: BaseFixGeneratorOptions & { apiKey: string },
 ): FixGenerator {
   const definition = PROVIDERS.find((p) => p.name === providerName);
   if (!definition) {

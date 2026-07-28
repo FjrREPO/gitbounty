@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { FixGenerator, FixTask, GeneratedFix } from "../types.js";
-import { buildFixPrompt, FIX_SCHEMA, parseGeneratedFix } from "./prompt.js";
+import type { FixGenerator, FixTask, GeneratedFix } from "../../types.js";
+import { buildFixPrompt, FIX_SCHEMA, parseGeneratedFix } from "../prompt.js";
 
 export interface ClaudeFixGeneratorOptions {
   client?: Anthropic;

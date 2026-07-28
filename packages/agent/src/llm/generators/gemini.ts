@@ -1,11 +1,11 @@
 // Gemini — OpenAI-compatible endpoint with vendor defaults baked in.
-import { OpenAICompatibleFixGenerator, type OpenAICompatibleFixGeneratorOptions } from "./base.js";
+import { BaseFixGenerator, type BaseFixGeneratorOptions } from "./base.js";
 
-export class GeminiFixGenerator extends OpenAICompatibleFixGenerator {
+export class GeminiFixGenerator extends BaseFixGenerator {
   static readonly DEFAULT_MODEL = "gemini-2.5-pro";
   static readonly DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
-  constructor(options: OpenAICompatibleFixGeneratorOptions = {}) {
+  constructor(options: BaseFixGeneratorOptions = {}) {
     super({
       ...options,
       model: options.model ?? GeminiFixGenerator.DEFAULT_MODEL,

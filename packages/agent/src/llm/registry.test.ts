@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OpenAICompatibleFixGenerator } from "./generators/base.js";
+import { BaseFixGenerator } from "./generators/base.js";
 import { ClaudeFixGenerator } from "./generators/claude.js";
 import {
   chooseProvider,
@@ -7,7 +7,7 @@ import {
   createGeneratorFor,
   listProviders,
   PROVIDERS,
-} from "./provider.js";
+} from "./registry.js";
 
 describe("chooseProvider", () => {
   it("prefers claude when several keys are present", () => {
@@ -65,7 +65,7 @@ describe("createGenerator", () => {
       { MISTRAL_API_KEY: "k" },
     ];
     for (const env of envs) {
-      expect(createGenerator(env)).toBeInstanceOf(OpenAICompatibleFixGenerator);
+      expect(createGenerator(env)).toBeInstanceOf(BaseFixGenerator);
     }
   });
 
@@ -80,7 +80,7 @@ describe("createGenerator", () => {
         LLM_BASE_URL: "https://api.example.com/v1",
         LLM_MODEL: "some-model",
       }),
-    ).toBeInstanceOf(OpenAICompatibleFixGenerator);
+    ).toBeInstanceOf(BaseFixGenerator);
   });
 });
 
@@ -97,7 +97,7 @@ describe("BYOK entry points", () => {
   it("builds a generator from a user-supplied key and model", () => {
     expect(
       createGeneratorFor("deepseek", { apiKey: "user-key", model: "deepseek-reasoner" }),
-    ).toBeInstanceOf(OpenAICompatibleFixGenerator);
+    ).toBeInstanceOf(BaseFixGenerator);
     expect(createGeneratorFor("claude", { apiKey: "user-key" })).toBeInstanceOf(ClaudeFixGenerator);
   });
 

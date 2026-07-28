@@ -2,7 +2,7 @@ import { FtsoPriceProvider } from "@gitbounty/plugin-ftso";
 import { GitHubClient } from "@gitbounty/plugin-github";
 import { BountyAgent } from "./agent.js";
 import { loadConfig } from "./config.js";
-import { chooseProvider, createGenerator } from "./provider.js";
+import { chooseProvider, createGenerator } from "./llm/registry.js";
 import { Workspace } from "./workspace.js";
 
 const config = loadConfig(process.env);
