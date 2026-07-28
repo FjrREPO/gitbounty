@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { chooseProvider, createGenerator, PROVIDERS } from "./provider.js";
-import { ClaudeFixGenerator } from "./solver.js";
-import { OpenAIFixGenerator } from "./solver-openai.js";
+import { ClaudeFixGenerator } from "./generators/claude.js";
+import { OpenAICompatibleFixGenerator } from "./generators/openai-compatible.js";
+import {
+  chooseProvider,
+  createGenerator,
+  createGeneratorFor,
+  listProviders,
+  PROVIDERS,
+} from "./provider.js";
 
 describe("chooseProvider", () => {
   it("prefers claude when several keys are present", () => {
@@ -35,7 +41,9 @@ describe("chooseProvider", () => {
   });
 
   it("rejects unknown providers and missing keys", () => {
-    expect(() => chooseProvider({ GITBOUNTY_LLM: "gemini" })).toThrow(/available: claude, openai/);
+    expect(() => chooseProvider({ GITBOUNTY_LLM: "llama-farm" })).toThrow(
+      /available: claude, openai/,
+    );
     expect(() => chooseProvider({})).toThrow(/no LLM configured/);
   });
 });
@@ -45,9 +53,20 @@ describe("createGenerator", () => {
     expect(createGenerator({ ANTHROPIC_API_KEY: "a" })).toBeInstanceOf(ClaudeFixGenerator);
   });
 
-  it("instantiates openai-compatible generators for glm and qwen", () => {
-    expect(createGenerator({ GLM_API_KEY: "g" })).toBeInstanceOf(OpenAIFixGenerator);
-    expect(createGenerator({ QWEN_API_KEY: "q" })).toBeInstanceOf(OpenAIFixGenerator);
+  it("instantiates a vendor generator for every openai-compatible provider", () => {
+    const envs = [
+      { OPENAI_API_KEY: "k" },
+      { DEEPSEEK_API_KEY: "k" },
+      { QWEN_API_KEY: "k" },
+      { GLM_API_KEY: "k" },
+      { KIMI_API_KEY: "k" },
+      { XAI_API_KEY: "k" },
+      { GEMINI_API_KEY: "k" },
+      { MISTRAL_API_KEY: "k" },
+    ];
+    for (const env of envs) {
+      expect(createGenerator(env)).toBeInstanceOf(OpenAICompatibleFixGenerator);
+    }
   });
 
   it("requires base url and model for the custom provider", () => {
@@ -61,7 +80,7 @@ describe("createGenerator", () => {
         LLM_BASE_URL: "https://api.example.com/v1",
         LLM_MODEL: "some-model",
       }),
-    ).toBeInstanceOf(OpenAIFixGenerator);
+    ).toBeInstanceOf(OpenAICompatibleFixGenerator);
   });
 });
 
@@ -71,5 +90,24 @@ describe("PROVIDERS registry", () => {
     const keys = PROVIDERS.map((p) => p.apiKeyEnv);
     expect(new Set(names).size).toBe(names.length);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("BYOK entry points", () => {
+  it("builds a generator from a user-supplied key and model", () => {
+    expect(
+      createGeneratorFor("deepseek", { apiKey: "user-key", model: "deepseek-reasoner" }),
+    ).toBeInstanceOf(OpenAICompatibleFixGenerator);
+    expect(createGeneratorFor("claude", { apiKey: "user-key" })).toBeInstanceOf(ClaudeFixGenerator);
+  });
+
+  it("rejects unknown providers", () => {
+    expect(() => createGeneratorFor("llama-farm", { apiKey: "k" })).toThrow(/unknown provider/);
+  });
+
+  it("lists providers with default models for a picker UI", () => {
+    const providers = listProviders();
+    expect(providers.map((p) => p.name)).toContain("claude");
+    expect(providers.find((p) => p.name === "deepseek")?.defaultModel).toBe("deepseek-chat");
   });
 });
