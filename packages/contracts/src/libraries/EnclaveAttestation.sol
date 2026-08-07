@@ -34,14 +34,22 @@ library EnclaveAttestation {
         payload = Base64.decode(_urlToStandard(_slice(token, firstDot + 1, secondDot)));
     }
 
-    /// @notice Returns the string value of a top-level `"key":"value"` claim,
-    ///         or an empty string when the claim is absent.
-    /// @dev Nested objects are searched too, which is what lets the escrow read
-    ///      `image_digest` out of `submods.container` without a JSON parser.
+    /// @notice Returns the string value of a `"key":"value"` claim, or an empty
+    ///         string when the claim is absent.
     function claim(bytes memory payload, bytes memory key) internal pure returns (bytes memory) {
+        return claim(payload, key, 0);
+    }
+
+    /// @notice Same, but only searching at or after `from`.
+    /// @dev Claims a workload chooses for itself — `eat_nonce`, `aud` — sit
+    ///      earlier in the payload than the ones Google fills in. Reading a
+    ///      trusted claim from offset 0 would let a workload smuggle a forged
+    ///      copy of it into a field it controls, so anything security-relevant
+    ///      is read from the offset of its enclosing object instead.
+    function claim(bytes memory payload, bytes memory key, uint256 from) internal pure returns (bytes memory) {
         // Match `"key":"` so a value can never be mistaken for a key.
         bytes memory needle = abi.encodePacked('"', key, '":"');
-        int256 at = _indexOf(payload, needle, 0);
+        int256 at = _indexOf(payload, needle, from);
         if (at < 0) {
             return "";
         }
@@ -51,6 +59,15 @@ library EnclaveAttestation {
             end++;
         }
         return _slice(payload, start, end);
+    }
+
+    /// @notice Offset of `marker` in `payload`; reverts when it is absent.
+    function offsetOf(bytes memory payload, bytes memory marker) internal pure returns (uint256) {
+        int256 at = _indexOf(payload, marker, 0);
+        if (at < 0) {
+            revert MalformedToken();
+        }
+        return uint256(at);
     }
 
     /// @notice Returns the numeric value of a top-level `"key":123` claim.
