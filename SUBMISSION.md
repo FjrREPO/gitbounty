@@ -46,7 +46,8 @@ paying: the contract only releases funds against a proof it verifies itself.
   on-chain through both verification paths.
 - **Video:** _(to record)_
 - **Web app:** Next.js frontend in `apps/app` (bounty board, funding flow,
-  claim registration, agent BYOK model picker).
+  claim registration, agent BYOK model picker), with the Go API in `apps/api`
+  and the Goldsky subgraph in `apps/indexer`.
 
 ## How it uses Flare
 
