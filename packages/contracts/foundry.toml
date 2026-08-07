@@ -13,5 +13,7 @@ remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
 ]
 
+fs_permissions = [{ access = "read", path = "./test/fixtures" }]
+
 [rpc_endpoints]
 coston2 = "https://coston2-api.flare.network/ext/C/rpc"

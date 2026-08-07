@@ -90,11 +90,13 @@ Both claim paths are proven end-to-end on Coston2:
   [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
   Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
 - **Confidential Compute** — the verifier runs on a Google Confidential Space
-  VM (Intel TDX) and mints its own signing key inside the enclave, so no
-  operator can forge a payout. Its Google-signed attestation binds that key
-  (`eat_nonce`) to the published image, and the signature it produced settled
-  in
-  [`0x533de2c6…`](https://coston2-explorer.flare.network/tx/0x533de2c6b388aefd9b236ae307adec768dbd57ec29d0bd74ae067ebe0e2843df).
+  VM (Intel TDX) and mints its own signing key inside the enclave. The escrow
+  **verifies the Google-signed attestation on-chain** (RS256 + image digest +
+  expiry) and takes the signer from it, so nobody chooses the key by hand:
+  [`0x97920460…`](https://coston2-explorer.flare.network/tx/0x979204605c769fa9069d149ad3f4a5ddb96fdac5bbe14411d704c4a106d0778e)
+  registered the signer, and
+  [`0xb4fafbff…`](https://coston2-explorer.flare.network/tx/0xb4fafbff8aa7d0f6f524af65db7bcc7337a05519913b1eba2191e40148555256)
+  paid a bounty against it.
 
 ### Claiming a public-repo bounty
 
