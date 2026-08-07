@@ -107,8 +107,9 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 
 1. **Mainnet beta** — deploy to Flare mainnet with the protocol fee enabled.
 2. **Private-repo pilot** — onboard one closed-source team onto the
-   Confidential Compute path; harden further with reproducible image builds
-   and an FDC-attested Google key feed.
+   Confidential Compute path; harden with reproducible image builds, and
+   attest Google's JWKS through an FDC verifier that can reach it (self-hosted,
+   or the mainnet verifier) so the last owner-set value goes away.
 3. **Agent marketplace** — publish the agent SDK so third-party agents compete
    for the same bounties.
 4. **FAssets** — let bounties be funded and paid in FXRP, so XRP holders can
@@ -121,6 +122,13 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
   cannot forge payouts. The key does not survive a VM restart; sealing it to a
   KMS key released only against an attestation is the next hardening step.
 - The escrow verifies the attestation itself, but the owner still registers
-  Google's public key (publicly checkable against their JWKS). Attesting the
-  JWKS endpoint through FDC Web2Json would close that last gap.
+  Google's public key. It is a falsifiable commitment — the stored modulus is
+  emitted in an event and anyone can diff it against Google's published JWKS —
+  but it is not yet trustless.
+
+  We tried to close this with FDC Web2Json and found the public testnet
+  verifier cannot reach `googleapis.com` (`FETCH ERROR`, while Flare's own
+  `swapi.info` example returns `VALID`), so the JWKS cannot be attested today.
+  Mirroring the JWKS through a host the verifier *can* reach would only move
+  the trust to that mirror, so we left the honest version in place.
 - No production users yet — the traction so far is the working system itself.
