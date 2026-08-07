@@ -1,0 +1,30 @@
+{
+  "name": "@gitbounty/plugin-fdc",
+  "version": "0.1.0",
+  "description": "FDC Web2Json attestation path: prove a GitHub PR merge on-chain for public repos",
+  "license": "MIT",
+  "author": "FjrREPO",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@gitbounty/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "viem": "^2.55.10"
+  }
+}

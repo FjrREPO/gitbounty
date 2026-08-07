@@ -1,0 +1,35 @@
+{
+  "name": "@gitbounty/agent",
+  "version": "0.1.0",
+  "description": "Autonomous bounty-hunting agent: picks up bounty issues, generates fixes with Claude, opens PRs",
+  "license": "MIT",
+  "author": "FjrREPO",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@gitbounty/core": "workspace:*",
+    "@gitbounty/plugin-ftso": "workspace:*",
+    "@gitbounty/plugin-github": "workspace:*",
+    "openai": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}

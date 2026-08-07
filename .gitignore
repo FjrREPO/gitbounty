@@ -7,6 +7,11 @@ dist/
 build/
 *.tsbuildinfo
 
+# foundry
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/broadcast/
+
 # env
 .env
 .env.*
@@ -24,3 +29,6 @@ pnpm-debug.log*
 
 # coverage
 coverage/
+
+# apps (kept out of the repo for now)
+apps/

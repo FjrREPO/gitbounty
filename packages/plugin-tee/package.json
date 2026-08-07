@@ -1,0 +1,33 @@
+{
+  "name": "@gitbounty/plugin-tee",
+  "version": "0.1.0",
+  "description": "Confidential Compute verifier: proves GitHub merges inside a TEE and signs escrow payouts",
+  "license": "MIT",
+  "author": "FjrREPO",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@gitbounty/core": "workspace:*",
+    "@gitbounty/plugin-github": "workspace:*",
+    "viem": "^2.55.10"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}
