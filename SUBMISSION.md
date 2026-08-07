@@ -94,12 +94,13 @@ Subgraph: `gitbounty-coston2` on Goldsky.
 
 | Path | Transaction |
 | --- | --- |
-| FDC Web2Json | [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509) |
-| Confidential Compute — on-chain attestation registered the signer | [`0x97920460…`](https://coston2-explorer.flare.network/tx/0x979204605c769fa9069d149ad3f4a5ddb96fdac5bbe14411d704c4a106d0778e) |
-| Confidential Compute — bounty paid against that signer | [`0xb4fafbff…`](https://coston2-explorer.flare.network/tx/0xb4fafbff8aa7d0f6f524af65db7bcc7337a05519913b1eba2191e40148555256) |
+| FDC Web2Json | [`0x8c53c686…`](https://coston2-explorer.flare.network/tx/0x8c53c686ae2912a056147196ba17f4c22e2c8a393f7ddd2405f557e5bdb996c2) |
+| Confidential Compute — on-chain attestation registered the signer | [`0x90b57035…`](https://coston2-explorer.flare.network/tx/0x90b57035c56394ddd87cc267ac080e91a94d718b18de1070c893b1acfabbc296) |
+| Confidential Compute — bounty paid against that signer | [`0x77a77057…`](https://coston2-explorer.flare.network/tx/0x77a77057b29f9f451a0404ef3e407b23a254828768fe6a2484185c5a9dcf0558) |
 
-The confidential claim came from a verifier running on a live Confidential
-Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
+All three were produced against the implementation currently behind the proxy,
+after the attestation-parser hardening. The confidential claim came from a
+verifier running on a live Confidential Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 `swname: CONFIDENTIAL_SPACE`, audience = the escrow address, and
 `eat_nonce` = the signing key address.
 
