@@ -54,14 +54,17 @@ Optional: `GITBOUNTY_LABEL` (default `bounty`), `GITBOUNTY_NETWORK` (default `co
 ### Running the TEE verifier
 
 Proves merges inside a Confidential Space enclave and signs escrow payouts.
-The escrow's `teeSigner` must equal the address it logs on boot.
 
 ```bash
 export GITHUB_TOKEN=ghp_...                # held only in enclave memory
-export TEE_SIGNING_KEY=0x...               # enclave signing key
 export ESCROW_ADDRESS=0xa8adefe2c8f0f71a585a73c1259997f593f9e463
 node packages/plugin-tee/dist/main.js      # POST /verify, GET /healthz
 ```
+
+The signing key is generated **inside** the enclave — nobody, including
+whoever deployed it, can sign payouts. Read the address from `/healthz` and
+point the escrow at it with `setTeeSigner(address)`. Setting `TEE_SIGNING_KEY`
+overrides this for local testing and logs a warning.
 
 Deploy it to an Intel TDX VM (image + launcher secrets, never baked in):
 
@@ -87,10 +90,13 @@ Both claim paths are proven end-to-end on Coston2:
   [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
   Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
 - **Confidential Compute** — the verifier runs on a Google Confidential Space
-  VM (Intel TDX). It returns a Google-signed attestation token binding its
-  signing key (`eat_nonce`) to the published image, and the signature it
-  produced settled in
-  [`0xa75ec5ac…`](https://coston2-explorer.flare.network/tx/0xa75ec5acb34c1461bf3ed34291bd709a7aadd12fdf38a789e946ef1c9b3fcbc3).
+  VM (Intel TDX) and mints its own signing key inside the enclave. The escrow
+  **verifies the Google-signed attestation on-chain** (RS256 + image digest +
+  expiry) and takes the signer from it, so nobody chooses the key by hand:
+  [`0x97920460…`](https://coston2-explorer.flare.network/tx/0x979204605c769fa9069d149ad3f4a5ddb96fdac5bbe14411d704c4a106d0778e)
+  registered the signer, and
+  [`0xb4fafbff…`](https://coston2-explorer.flare.network/tx/0xb4fafbff8aa7d0f6f524af65db7bcc7337a05519913b1eba2191e40148555256)
+  paid a bounty against it.
 
 ### Claiming a public-repo bounty
 
