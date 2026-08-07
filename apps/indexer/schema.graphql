@@ -1,0 +1,44 @@
+enum BountyStatus {
+  OPEN
+  PAID
+  RECLAIMED
+}
+
+type Bounty @entity(immutable: false) {
+  "The on-chain bounty id"
+  id: ID!
+  bountyId: BigInt!
+  funder: Bytes!
+  repo: String!
+  issueNumber: BigInt!
+  amount: BigInt!
+  rewardUsdCents: BigInt!
+  expiresAt: BigInt!
+  status: BountyStatus!
+  createdAt: BigInt!
+  createdTx: Bytes!
+  paidTo: Bytes
+  paidAmount: BigInt
+  refundedAmount: BigInt
+  paidAt: BigInt
+  reclaimedAt: BigInt
+  claims: [Claim!]! @derivedFrom(field: "bounty")
+}
+
+type Claim @entity(immutable: false) {
+  "bountyId-claimant"
+  id: ID!
+  bounty: Bounty!
+  claimant: Bytes!
+  prNumber: BigInt!
+  githubLoginHash: Bytes!
+  registeredAt: BigInt!
+}
+
+type ProtocolStats @entity(immutable: false) {
+  "Singleton: always \"protocol\""
+  id: ID!
+  totalBounties: BigInt!
+  openBounties: BigInt!
+  totalPaidWei: BigInt!
+}
