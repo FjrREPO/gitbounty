@@ -4,14 +4,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Proxy the API through the app's own origin so the browser only ever talks to app.goaly.fun.
-# Survives networks/firewalls that block the API host directly, and needs no CORS.
-[[redirects]]
-  from = "/api/*"
-  to = "https://api.goaly.fun/:splat"
-  status = 200
-  force = true
-
 # HTML must always be re-validated so a new deploy is picked up immediately (no stale bundle).
 [[headers]]
   for = "/*"
