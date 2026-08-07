@@ -5,9 +5,11 @@ import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/F
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {IWeb2JsonVerification} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2JsonVerification.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IGitBountyEscrow} from "./interfaces/IGitBountyEscrow.sol";
+import {EnclaveAttestation} from "./libraries/EnclaveAttestation.sol";
 import {EthSignedMessage} from "./libraries/EthSignedMessage.sol";
 import {FtsoRewardMath} from "./libraries/FtsoRewardMath.sol";
 import {GitHubApi} from "./libraries/GitHubApi.sol";
@@ -34,6 +36,11 @@ contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable,
         uint256 nextBountyId;
         mapping(uint256 bountyId => Bounty) bounties;
         mapping(uint256 bountyId => mapping(address claimant => Claim)) claims;
+        // Attestation policy: which signing key and which enclave image are
+        // trusted to nominate `teeSigner`.
+        bytes attestationModulus;
+        bytes attestationExponent;
+        string enclaveImageDigest;
     }
 
     // keccak256(abi.encode(uint256(keccak256("gitbounty.storage.Escrow")) - 1))
@@ -151,7 +158,56 @@ contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable,
 
     // -- administration ----------------------------------------------------
 
-    /// @notice Rotates the TEE verifier's enclave key.
+    /// @notice Sets the attestation policy: Google's Confidential Space signing
+    ///         key and the enclave image digest allowed to nominate a signer.
+    /// @dev The modulus is publicly checkable against Google's JWKS, so this
+    ///      is a falsifiable commitment rather than a trusted one.
+    function setAttestationPolicy(bytes calldata modulus, bytes calldata exponent, string calldata imageDigest)
+        external
+        onlyOwner
+    {
+        EscrowStorage storage $ = _storage();
+        $.attestationModulus = modulus;
+        $.attestationExponent = exponent;
+        $.enclaveImageDigest = imageDigest;
+        emit AttestationPolicySet(keccak256(modulus), imageDigest);
+    }
+
+    /// @inheritdoc IGitBountyEscrow
+    /// @dev Permissionless: anyone holding a fresh attestation from the approved
+    ///      image can rotate the signer, so the owner cannot quietly install a
+    ///      key of their own.
+    function registerEnclaveSigner(bytes calldata token) external {
+        EscrowStorage storage $ = _storage();
+        if ($.attestationModulus.length == 0) revert NoAttestationPolicy();
+
+        bytes memory payload = EnclaveAttestation.verify(token, $.attestationModulus, $.attestationExponent);
+
+        // The token must come from a Confidential Space enclave running the
+        // approved image, and be addressed to this escrow.
+        if (
+            keccak256(EnclaveAttestation.claim(payload, "hwmodel")) != keccak256("GCP_INTEL_TDX")
+                || keccak256(EnclaveAttestation.claim(payload, "swname")) != keccak256("CONFIDENTIAL_SPACE")
+                || keccak256(EnclaveAttestation.claim(payload, "image_digest"))
+                    != keccak256(bytes($.enclaveImageDigest))
+                || keccak256(EnclaveAttestation.claim(payload, "aud"))
+                    != keccak256(bytes(Strings.toHexString(address(this))))
+        ) {
+            revert UnexpectedEnclave();
+        }
+
+        // A stale token must not be replayable.
+        if (block.timestamp >= EnclaveAttestation.claimNumber(payload, "exp")) {
+            revert AttestationExpired();
+        }
+
+        address newSigner = EnclaveAttestation.toAddress(EnclaveAttestation.claim(payload, "eat_nonce"));
+        emit TeeSignerUpdated($.teeSigner, newSigner);
+        $.teeSigner = newSigner;
+    }
+
+    /// @notice Rotates the TEE verifier's enclave key without an attestation.
+    /// @dev Kept for bootstrap and emergencies; prefer registerEnclaveSigner.
     function setTeeSigner(address newSigner) external onlyOwner {
         EscrowStorage storage $ = _storage();
         emit TeeSignerUpdated($.teeSigner, newSigner);

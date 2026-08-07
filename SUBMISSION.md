@@ -56,7 +56,7 @@ cannot be built the same way on another chain:
 | Protocol | Role |
 | --- | --- |
 | **FDC Web2Json** | Answers "did this PR actually get merged?" on-chain. The validator set fetches the GitHub API, and the escrow verifies the Merkle proof itself, binding it to the exact repo and PR. Without it, this needs a trusted oracle operator — which destroys the trustlessness the product sells. |
-| **Flare Confidential Compute** | Answers "how do we do that privately?" The verifier runs in Confidential Space; its attestation token binds the payout signing key (`eat_nonce`) to the published image, so the escrow's `teeSigner` is provably that enclave and not an operator with a spare key. |
+| **Flare Confidential Compute** | Answers "how do we do that privately?" The verifier runs in Confidential Space and mints its signing key inside the enclave. The escrow verifies the Google attestation **on-chain** — RSA signature, enclave image digest, TDX hardware, expiry — and adopts the key it names, so `teeSigner` is provably that enclave rather than an operator's choice. |
 | **FTSO v2** | Answers "how does a $500 bounty stay $500?" Rewards are denominated in USD and converted to FLR at the live feed price at payout time, with surplus escrow refunded to the funder. |
 
 ## What was newly built
@@ -95,7 +95,8 @@ Subgraph: `gitbounty-coston2` on Goldsky.
 | Path | Transaction |
 | --- | --- |
 | FDC Web2Json | [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509) |
-| Confidential Compute | [`0x533de2c6…`](https://coston2-explorer.flare.network/tx/0x533de2c6b388aefd9b236ae307adec768dbd57ec29d0bd74ae067ebe0e2843df) |
+| Confidential Compute — on-chain attestation registered the signer | [`0x97920460…`](https://coston2-explorer.flare.network/tx/0x979204605c769fa9069d149ad3f4a5ddb96fdac5bbe14411d704c4a106d0778e) |
+| Confidential Compute — bounty paid against that signer | [`0xb4fafbff…`](https://coston2-explorer.flare.network/tx/0xb4fafbff8aa7d0f6f524af65db7bcc7337a05519913b1eba2191e40148555256) |
 
 The confidential claim came from a verifier running on a live Confidential
 Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
@@ -107,7 +108,7 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 1. **Mainnet beta** — deploy to Flare mainnet with the protocol fee enabled.
 2. **Private-repo pilot** — onboard one closed-source team onto the
    Confidential Compute path; harden further with reproducible image builds
-   and on-chain attestation checks.
+   and an FDC-attested Google key feed.
 3. **Agent marketplace** — publish the agent SDK so third-party agents compete
    for the same bounties.
 4. **FAssets** — let bounties be funded and paid in FXRP, so XRP holders can
@@ -119,7 +120,7 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 - The enclave mints its own signing key and never exports it, so the operator
   cannot forge payouts. The key does not survive a VM restart; sealing it to a
   KMS key released only against an attestation is the next hardening step.
-- The attestation is verified off-chain by whoever trusts the enclave, not by
-  the escrow itself. Verifying the JWT on-chain would remove the last manual
-  step in pointing `teeSigner` at a new enclave.
+- The escrow verifies the attestation itself, but the owner still registers
+  Google's public key (publicly checkable against their JWKS). Attesting the
+  JWKS endpoint through FDC Web2Json would close that last gap.
 - No production users yet — the traction so far is the working system itself.

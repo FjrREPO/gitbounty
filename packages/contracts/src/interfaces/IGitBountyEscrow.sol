@@ -50,6 +50,7 @@ interface IGitBountyEscrow {
     event BountyPaid(uint256 indexed id, address indexed recipient, uint256 paid, uint256 refunded);
     event BountyReclaimed(uint256 indexed id);
     event TeeSignerUpdated(address indexed previousSigner, address indexed newSigner);
+    event AttestationPolicySet(bytes32 indexed modulusHash, string imageDigest);
 
     error ZeroReward();
     error PastExpiry();
@@ -63,6 +64,9 @@ interface IGitBountyEscrow {
     error NotFunder();
     error NotExpired();
     error TransferFailed();
+    error NoAttestationPolicy();
+    error UnexpectedEnclave();
+    error AttestationExpired();
 
     function createBounty(string calldata repo, uint64 issueNumber, uint128 rewardUsdCents, uint64 expiresAt)
         external
@@ -76,6 +80,10 @@ interface IGitBountyEscrow {
     function claimWithTeeProof(uint256 bountyId, address recipient, bytes calldata signature) external;
 
     function reclaim(uint256 bountyId) external;
+
+    /// @notice Points `teeSigner` at the key inside an attested enclave.
+    /// @param token Confidential Space attestation JWT naming the key as its nonce.
+    function registerEnclaveSigner(bytes calldata token) external;
 
     function getBounty(uint256 bountyId) external view returns (Bounty memory);
 
