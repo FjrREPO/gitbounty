@@ -36,3 +36,32 @@ jobs:
       - name: Contract tests
         working-directory: packages/contracts
         run: forge fmt --check && forge test -vv
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Vet and test
+        working-directory: apps/api
+        run: go vet ./... && go test ./...
+
+  indexer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The mapping is AssemblyScript, not TypeScript, so it fails on syntax
+      # the linter is otherwise happy to introduce. Only a real compile catches it.
+      - name: Compile subgraph
+        working-directory: apps/indexer
+        run: npm ci && npx graph codegen && npx graph build
