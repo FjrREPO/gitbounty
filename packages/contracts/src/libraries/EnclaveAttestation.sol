@@ -12,6 +12,7 @@ import {RSA} from "@openzeppelin/contracts/utils/cryptography/RSA.sol";
 library EnclaveAttestation {
     error MalformedToken();
     error BadSignature();
+    error DuplicateClaim();
 
     /// @notice Verifies `token` against an RSA public key and returns its payload.
     /// @param token The compact JWT: base64url(header).base64url(payload).base64url(sig)
@@ -40,25 +41,36 @@ library EnclaveAttestation {
         return claim(payload, key, 0);
     }
 
-    /// @notice Same, but only searching at or after `from`.
-    /// @dev Claims a workload chooses for itself — `eat_nonce`, `aud` — sit
-    ///      earlier in the payload than the ones Google fills in. Reading a
-    ///      trusted claim from offset 0 would let a workload smuggle a forged
-    ///      copy of it into a field it controls, so anything security-relevant
-    ///      is read from the offset of its enclosing object instead.
+    /// @notice Same, but rejects the token when the claim appears twice.
+    /// @dev A workload picks its own `aud` and `eat_nonce`, so it can write a
+    ///      second copy of a claim inside one of those values. Position cannot
+    ///      decide which copy is genuine — the escaping that separates them
+    ///      belongs to Google's encoder, not to this parser — so for the two
+    ///      claims that decide *who* gets the signer slot and *which* escrow
+    ///      the token is good for, a duplicate rejects the whole token.
+    ///      Costs a full scan of the payload, so it is not the default.
+    function claimUnique(bytes memory payload, bytes memory key) internal pure returns (bytes memory) {
+        bytes memory needle = abi.encodePacked('"', key, '":"');
+        int256 at = _indexOf(payload, needle, 0);
+        if (at < 0) {
+            return "";
+        }
+        if (_indexOf(payload, needle, uint256(at) + 1) >= 0) {
+            revert DuplicateClaim();
+        }
+        return _value(payload, uint256(at) + needle.length);
+    }
+
+    /// @notice Same, but reading the first match at or after `from`.
+    /// @dev For a claim nested under an object only the issuer writes, where a
+    ///      duplicate elsewhere in the document is not this read's concern.
     function claim(bytes memory payload, bytes memory key, uint256 from) internal pure returns (bytes memory) {
-        // Match `"key":"` so a value can never be mistaken for a key.
         bytes memory needle = abi.encodePacked('"', key, '":"');
         int256 at = _indexOf(payload, needle, from);
         if (at < 0) {
             return "";
         }
-        uint256 start = uint256(at) + needle.length;
-        uint256 end = start;
-        while (end < payload.length && payload[end] != '"') {
-            end++;
-        }
-        return _slice(payload, start, end);
+        return _value(payload, uint256(at) + needle.length);
     }
 
     /// @notice Offset of `marker` in `payload`; reverts when it is absent.
@@ -126,6 +138,15 @@ library EnclaveAttestation {
             }
         }
         return string(input);
+    }
+
+    /// @dev Reads a JSON string value starting at `start`, up to its quote.
+    function _value(bytes memory payload, uint256 start) private pure returns (bytes memory) {
+        uint256 end = start;
+        while (end < payload.length && payload[end] != '"') {
+            end++;
+        }
+        return _slice(payload, start, end);
     }
 
     function _slice(bytes memory data, uint256 start, uint256 end) private pure returns (bytes memory out) {
