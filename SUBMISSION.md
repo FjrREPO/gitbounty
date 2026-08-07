@@ -66,7 +66,7 @@ it, and the repository has 15 merged pull requests covering:
 
 - `GitBountyEscrow`: UUPS-upgradeable escrow (Solidity 0.8.36, ERC-7201
   namespaced storage) with two independent claim paths, FTSO conversion,
-  expiry reclaim, and enclave key rotation. 27 Foundry tests.
+  expiry reclaim, and on-chain attestation verification. 39 Foundry tests.
 - FDC Web2Json integration: attestation request builder and a round-trip claim
   script (verifier → FDC hub → voting round → DA layer proof → claim).
 - Confidential Space verifier: attestation client, payout signer matching the
@@ -82,7 +82,7 @@ it, and the repository has 15 merged pull requests covering:
 | Contract | Address |
 | --- | --- |
 | `GitBountyEscrow` (UUPS proxy) | [`0xa8adefe2c8f0f71a585a73c1259997f593f9e463`](https://coston2-explorer.flare.network/address/0xa8adefe2c8f0f71a585a73c1259997f593f9e463) |
-| Implementation | [`0x9daf66b75d348d4f90b125a282bbfa608ecec13c`](https://coston2-explorer.flare.network/address/0x9daf66b75d348d4f90b125a282bbfa608ecec13c) |
+| Implementation | [`0x04591fefa8314d25fb12e344b94532f0eb4896da`](https://coston2-explorer.flare.network/address/0x04591fefa8314d25fb12e344b94532f0eb4896da) |
 
 Source verified on the Coston2 explorer. FtsoV2 and FdcVerification are
 resolved through the FlareContractRegistry at deploy time, so the same code
