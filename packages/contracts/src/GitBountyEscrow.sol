@@ -195,7 +195,7 @@ contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable,
                 || keccak256(EnclaveAttestation.claim(payload, "swname")) != keccak256("CONFIDENTIAL_SPACE")
                 || keccak256(EnclaveAttestation.claim(payload, "image_digest", submods))
                     != keccak256(bytes($.enclaveImageDigest))
-                || keccak256(EnclaveAttestation.claim(payload, "aud"))
+                || keccak256(EnclaveAttestation.claimUnique(payload, "aud"))
                     != keccak256(bytes(Strings.toHexString(address(this))))
         ) {
             revert UnexpectedEnclave();
@@ -206,7 +206,7 @@ contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable,
             revert AttestationExpired();
         }
 
-        address newSigner = EnclaveAttestation.toAddress(EnclaveAttestation.claim(payload, "eat_nonce"));
+        address newSigner = EnclaveAttestation.toAddress(EnclaveAttestation.claimUnique(payload, "eat_nonce"));
         emit TeeSignerUpdated($.teeSigner, newSigner);
         $.teeSigner = newSigner;
     }

@@ -30,11 +30,30 @@ contract EnclaveAttestationTest is Test {
     // Regression: reading a trusted claim from offset 0 lets a workload forge
     // it in a field it controls, because those fields come first. Scoping the
     // read to `submods` is what makes the image check meaningful.
-    function test_scopedReadIgnoresAForgedClaim() public pure {
-        assertEq(string(EnclaveAttestation.claim(SPOOFED, "image_digest")), "sha256:real");
+    function test_scopedReadIgnoresAForgedClaim() public {
+        vm.expectRevert(EnclaveAttestation.DuplicateClaim.selector);
+        this.claimUnique(SPOOFED, "image_digest");
 
         uint256 submods = EnclaveAttestation.offsetOf(SPOOFED, '"submods"');
         assertEq(string(EnclaveAttestation.claim(SPOOFED, "image_digest", submods)), "sha256:attacker");
+    }
+
+    // Regression: `aud` is the first claim and the workload chooses it, so a
+    // forged `eat_nonce` written inside it would otherwise win on position and
+    // hand an attacker the signer slot. Two copies means neither is trusted.
+    function test_rejectsAClaimSmuggledIntoTheAudience() public {
+        bytes memory hijack = '{"aud":"0xescrow","eat_nonce":"0xEVIL","exp":1,"eat_nonce":"0xaDF1","submods":{}}';
+        vm.expectRevert(EnclaveAttestation.DuplicateClaim.selector);
+        this.claimUnique(hijack, "eat_nonce");
+
+        // Unscoped reads still take the first match; they gate nothing on
+        // their own once `image_digest` is anchored, and a full scan each is
+        // what pushed the registration past the block gas limit.
+        assertEq(string(EnclaveAttestation.claim(hijack, "eat_nonce")), "0xEVIL");
+    }
+
+    function claimUnique(bytes calldata payload, bytes calldata key) external pure returns (bytes memory) {
+        return EnclaveAttestation.claimUnique(payload, key);
     }
 
     function test_offsetOfRevertsWhenTheMarkerIsAbsent() public {
