@@ -59,9 +59,26 @@ export async function fetchAttestationToken(
         reject(new Error(`launcher returned: ${status}`));
         return;
       }
-      resolve(raw.slice(separator + 4).trim());
+      const head = raw.slice(0, separator);
+      const body = raw.slice(separator + 4);
+      resolve(/transfer-encoding:\s*chunked/i.test(head) ? dechunk(body) : body.trim());
     });
   });
+}
+
+/** Reassembles an HTTP/1.1 chunked body; the launcher streams the token. */
+export function dechunk(body: string): string {
+  let rest = body;
+  let out = "";
+  while (rest.length > 0) {
+    const eol = rest.indexOf("\r\n");
+    if (eol === -1) break;
+    const size = Number.parseInt(rest.slice(0, eol).trim(), 16);
+    if (!Number.isFinite(size) || size === 0) break;
+    out += rest.slice(eol + 2, eol + 2 + size);
+    rest = rest.slice(eol + 2 + size + 2);
+  }
+  return out.trim();
 }
 
 /** Whether the process is running inside a Confidential Space enclave. */
