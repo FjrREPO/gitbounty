@@ -86,9 +86,9 @@ Both claim paths are proven end-to-end on Coston2:
   set and the escrow paid out against the Merkle proof:
   [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
   Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
-- **Confidential Compute** — a signature produced by the enclave `PayoutSigner`
-  was accepted by `claimWithTeeProof`:
-  [`0x83e349b3…`](https://coston2-explorer.flare.network/tx/0x83e349b37924d5200bbf6be5e31952e8051b3db1da0d186481ccc347c9662577).
+- **Confidential Compute** — the enclave image was run against the same merged
+  PR and the signature it returned was accepted by `claimWithTeeProof`:
+  [`0x50e5a718…`](https://coston2-explorer.flare.network/tx/0x50e5a71892f23ed8e38b7246f894ce5cecc2b9b0971e7934371d702ded2bf715).
 
 ### Claiming a public-repo bounty
 
