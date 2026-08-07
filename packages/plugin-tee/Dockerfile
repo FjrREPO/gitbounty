@@ -14,7 +14,7 @@ COPY packages/core packages/core
 COPY packages/plugin-github packages/plugin-github
 COPY packages/plugin-tee packages/plugin-tee
 RUN pnpm --filter @gitbounty/plugin-tee... build && \
-    pnpm deploy --filter @gitbounty/plugin-tee --prod /app
+    pnpm deploy --filter @gitbounty/plugin-tee --prod --legacy /app
 
 FROM node:22-slim
 WORKDIR /app
