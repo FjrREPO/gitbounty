@@ -80,6 +80,9 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+      viem:
+        specifier: ^2.55.10
+        version: 2.55.10(typescript@7.0.2)
 
   packages/plugin-ftso:
     dependencies:
