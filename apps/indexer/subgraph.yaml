@@ -1,0 +1,33 @@
+specVersion: 1.0.0
+description: GitBounty escrow indexer (Coston2)
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: GitBountyEscrow
+    network: flare-coston2
+    source:
+      address: "0xa8adefe2c8f0f71a585a73c1259997f593f9e463"
+      abi: GitBountyEscrow
+      startBlock: 33357868
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Bounty
+        - Claim
+        - ProtocolStats
+      abis:
+        - name: GitBountyEscrow
+          file: ./abis/GitBountyEscrow.json
+      eventHandlers:
+        - event: BountyCreated(indexed uint256,indexed address,string,uint64,uint256,uint128,uint64)
+          handler: handleBountyCreated
+        - event: ClaimRegistered(indexed uint256,indexed address,uint256,bytes32)
+          handler: handleClaimRegistered
+        - event: BountyPaid(indexed uint256,indexed address,uint256,uint256)
+          handler: handleBountyPaid
+        - event: BountyReclaimed(indexed uint256)
+          handler: handleBountyReclaimed
+      file: ./src/mapping.ts

@@ -1,0 +1,26 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Build & deploy to Netlify (production)
+        run: |
+          npx --yes netlify-cli@latest link --id 0e1cb020-f106-4969-b125-0235fd5cb50b
+          npx --yes netlify-cli@latest deploy --build --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          # Relative → resolves to app.goaly.fun/api (Netlify proxies it to the real API).
+          # Set to the full https://api.goaly.fun only if you want the browser to hit the API directly.
+          NEXT_PUBLIC_API_URL: /api
+          NEXT_PUBLIC_ARBITRUM_RPC: https://arb1.arbitrum.io/rpc
+          # Web Push VAPID public key (client). Falls back to GET /notifications/vapid-key if unset.
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: BAAqOctCHG3Rc8p9bTk5znTLZeXemnGp7r2fhir-tehdMYPsYGwZLq8kect1V7f3LqE0l4COn-rxYbwiFFlN3J0
