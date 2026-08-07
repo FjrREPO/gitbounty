@@ -1,5 +1,6 @@
 export {
   type AttestationRequest,
+  dechunk,
   fetchAttestationToken,
   isEnclave,
   LAUNCHER_SOCKET,

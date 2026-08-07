@@ -49,6 +49,11 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member "serviceAccount:${SERVICE_ACCOUNT}" \
   --role roles/logging.logWriter --condition=None >/dev/null
 
+# The launcher pulls the workload image as this service account.
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member "serviceAccount:${SERVICE_ACCOUNT}" \
+  --role roles/artifactregistry.reader --condition=None >/dev/null
+
 echo "==> Building and pushing ${IMAGE}"
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 docker build --platform linux/amd64 -f packages/plugin-tee/Dockerfile -t "${IMAGE}" .
@@ -62,11 +67,18 @@ gcloud compute instances create "${VM_NAME}" \
   --confidential-compute-type TDX \
   --shielded-secure-boot \
   --maintenance-policy TERMINATE \
-  --image-family confidential-space-debug \
+  --image-family "${CS_IMAGE_FAMILY:-confidential-space}" \
   --image-project confidential-space-images \
   --service-account "${SERVICE_ACCOUNT}" \
   --scopes cloud-platform \
+  --tags gitbounty-tee \
   --metadata "^~^tee-image-reference=${IMAGE}~tee-container-log-redirect=true~tee-env-GITHUB_TOKEN=${GITHUB_TOKEN}~tee-env-TEE_SIGNING_KEY=${TEE_SIGNING_KEY}~tee-env-ESCROW_ADDRESS=${ESCROW_ADDRESS}~tee-env-CHAIN_ID=${CHAIN_ID}"
+
+echo "==> Allowing inbound verifier traffic"
+gcloud compute firewall-rules describe gitbounty-tee-8080 --project "${PROJECT_ID}" >/dev/null 2>&1 ||
+  gcloud compute firewall-rules create gitbounty-tee-8080 \
+    --project "${PROJECT_ID}" --allow tcp:8080 --target-tags gitbounty-tee \
+    --description "GitBounty enclave verifier" >/dev/null
 
 echo
 echo "Deployed. The enclave's signer address must equal the escrow's teeSigner."
