@@ -1,0 +1,17 @@
+{
+  "name": "gitbounty-indexer",
+  "version": "1.0.0",
+  "description": "Goldsky subgraph indexing the GitBountyEscrow on Coston2",
+  "license": "MIT",
+  "author": "FjrREPO",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "goldsky subgraph deploy gitbounty-coston2/1.0.0 --path ."
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.97.1",
+    "@graphprotocol/graph-ts": "^0.38.1"
+  }
+}

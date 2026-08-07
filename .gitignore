@@ -30,5 +30,3 @@ pnpm-debug.log*
 # coverage
 coverage/
 
-# apps (kept out of the repo for now)
-apps/
