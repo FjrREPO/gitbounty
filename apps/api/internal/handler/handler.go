@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -129,11 +130,35 @@ func (h *Handler) GetBounty(w http.ResponseWriter, r *http.Request) {
 	h.json(w, http.StatusOK, h.enrich(r.Context(), bounty))
 }
 
+// repoSegment matches the characters GitHub allows in an owner or repository
+// name. Anchored per segment, so a slash can only come from the separator.
+var repoSegment = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+
+// validRepo reports whether s is a well-formed "owner/name".
+//
+// This is the trust boundary: the value is pasted straight into a GitHub API
+// path that the server calls with its own token, so counting slashes is not
+// enough. "../user" has exactly one slash and would walk out of /repos/ into
+// whatever endpoint the token can reach.
+func validRepo(s string) bool {
+	owner, name, found := strings.Cut(s, "/")
+	if !found || !repoSegment.MatchString(owner) || !repoSegment.MatchString(name) {
+		return false
+	}
+	// "." and ".." pass the character class but are path segments, not names.
+	for _, part := range [2]string{owner, name} {
+		if strings.Trim(part, ".") == "" {
+			return false
+		}
+	}
+	return true
+}
+
 // GitHubMeta serves cached GitHub metadata for an arbitrary repo (+issue),
 // so the web can render GitHub identity without its own rate limit.
 func (h *Handler) GitHubMeta(w http.ResponseWriter, r *http.Request) {
 	repo := r.URL.Query().Get("repo")
-	if repo == "" || strings.Count(repo, "/") != 1 {
+	if !validRepo(repo) {
 		h.error(w, http.StatusBadRequest, `repo query param must be "owner/name"`)
 		return
 	}

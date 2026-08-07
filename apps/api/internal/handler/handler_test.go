@@ -205,3 +205,24 @@ func TestListBountiesHidesUnresolvableRepos(t *testing.T) {
 		t.Fatalf("include=all should return every bounty, got %d", len(body.Bounties))
 	}
 }
+
+// Regression: the repo param lands in a GitHub API path the server calls with
+// its own token, so a value that walks out of /repos/ must be rejected at the
+// boundary. Counting slashes let "../user" through.
+func TestValidRepo(t *testing.T) {
+	valid := []string{"FjrREPO/gitbounty", "wevm/viem", "a/b", "org.name/repo-name_1"}
+	for _, s := range valid {
+		if !validRepo(s) {
+			t.Errorf("validRepo(%q) = false, want true", s)
+		}
+	}
+	invalid := []string{
+		"", "noslash", "a/b/c", "../user", "a/..", "./x", "a/", "/b",
+		"a b/c", "a/c?x=1", "a%2Fb/c", "..%2Fuser/x", "a/c#frag",
+	}
+	for _, s := range invalid {
+		if validRepo(s) {
+			t.Errorf("validRepo(%q) = true, want false", s)
+		}
+	}
+}
