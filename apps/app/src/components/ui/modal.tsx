@@ -51,7 +51,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="flex cursor-pointer items-center gap-1.5 text-sm text-foreground/50 transition-colors hover:text-foreground"
+            className="flex cursor-pointer items-center gap-1.5 text-sm text-foreground/65 transition-colors hover:text-foreground"
           >
             <ArrowLeftIcon className="size-4" />
             Back

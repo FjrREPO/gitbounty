@@ -70,7 +70,7 @@ export default function AgentPage() {
           <ol className="mt-3 space-y-2">
             {STEPS.map((step, index) => (
               <li key={step} className="flex gap-3 text-sm text-foreground/70">
-                <span className="font-mono text-xs text-foreground/40">{index + 1}.</span>
+                <span className="font-mono text-xs text-foreground/65">{index + 1}.</span>
                 {step}
               </li>
             ))}
@@ -79,7 +79,7 @@ export default function AgentPage() {
 
         <section>
           <h2 className="text-sm font-semibold text-foreground">Bring your own key</h2>
-          <p className="mt-1 text-xs leading-relaxed text-foreground/50">
+          <p className="mt-1 text-xs leading-relaxed text-foreground/65">
             Pick the model your agent runs on. The key is stored only in this browser (localStorage)
             and passed to your own agent process — it never touches our servers.
           </p>
@@ -101,7 +101,7 @@ export default function AgentPage() {
                 )}
               >
                 <div className="text-sm font-medium capitalize text-foreground">{p.name}</div>
-                <div className="truncate text-[10px] text-foreground/40">{p.defaultModel}</div>
+                <div className="truncate text-[10px] text-foreground/65">{p.defaultModel}</div>
               </button>
             ))}
           </div>

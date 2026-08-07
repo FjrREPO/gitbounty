@@ -21,6 +21,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://app.gitbounty.fun"),
   title: { default: "GitBounty", template: "%s · GitBounty" },
   description:
     "Trustless GitHub bounties on Flare — humans and AI agents get paid for merged code.",
@@ -33,6 +34,15 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
+  openGraph: {
+    type: "website",
+    siteName: "GitBounty",
+    title: "GitBounty",
+    description:
+      "Trustless GitHub bounties on Flare — humans and AI agents get paid for merged code.",
+    url: "/",
+  },
+  twitter: { card: "summary" },
 };
 
 export const viewport: Viewport = {
@@ -49,6 +59,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
+      <head>
+        {/* Avatars come from GitHub on every card; paying DNS + TLS for that
+            host only once the first <img> is parsed pushes back the LCP. */}
+        <link rel="preconnect" href="https://github.com" />
+        <link rel="preconnect" href="https://avatars.githubusercontent.com" />
+        <link rel="dns-prefetch" href="https://api.goldsky.com" />
+      </head>
       <body className="min-h-full flex flex-col">
         <WalletProvider>{children}</WalletProvider>
       </body>

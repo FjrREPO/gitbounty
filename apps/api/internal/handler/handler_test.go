@@ -226,3 +226,46 @@ func TestValidRepo(t *testing.T) {
 		}
 	}
 }
+
+func TestListBountiesPaginates(t *testing.T) {
+	store := &fakeStore{}
+	for i := range 30 {
+		store.bounties = append(store.bounties, domain.Bounty{
+			ID: uint64(i), Repo: "acme/demo", Status: domain.StatusOpen,
+		})
+	}
+	store.bounties = append(store.bounties, domain.Bounty{
+		ID: 99, Repo: "other/thing", Status: domain.StatusPaid,
+	})
+
+	page := func(target string) (int, int) {
+		t.Helper()
+		var body struct {
+			Bounties []EnrichedBounty `json:"bounties"`
+			Total    int              `json:"total"`
+		}
+		rec := serve(t, store, http.MethodGet, target)
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatalf("decode %s: %v", target, err)
+		}
+		return len(body.Bounties), body.Total
+	}
+
+	if n, total := page("/api/v1/bounties"); n != defaultLimit || total != 31 {
+		t.Fatalf("page 1 = %d of %d, want %d of 31", n, total, defaultLimit)
+	}
+	if n, _ := page("/api/v1/bounties?limit=5&offset=28"); n != 3 {
+		t.Fatalf("tail page = %d, want 3 (only 3 rows remain)", n)
+	}
+	// Filters must apply before the page is cut, or paging walks unmatched rows.
+	if n, total := page("/api/v1/bounties?status=PAID"); n != 1 || total != 1 {
+		t.Fatalf("status filter = %d of %d, want 1 of 1", n, total)
+	}
+	if _, total := page("/api/v1/bounties?search=OTHER"); total != 1 {
+		t.Fatalf("search = %d rows, want 1 (case-insensitive)", total)
+	}
+	// An offset past the end is a request for nothing, not a panic.
+	if n, _ := page("/api/v1/bounties?offset=9999"); n != 0 {
+		t.Fatalf("offset past end = %d rows, want 0", n)
+	}
+}

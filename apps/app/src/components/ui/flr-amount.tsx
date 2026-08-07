@@ -19,7 +19,7 @@ export function FlrAmount({
         alt="FLR"
         width={size === "lg" ? 20 : 14}
         height={size === "lg" ? 20 : 14}
-        unoptimized
+        unoptimized // fixed tiny local mark; optimizing costs more than it saves
         className={cn("rounded-full", size === "lg" ? "size-5" : "size-3.5")}
       />
       {children}

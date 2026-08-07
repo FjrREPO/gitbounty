@@ -28,10 +28,14 @@ try {
     metadata: {
       name: "GitBounty",
       description: "Trustless GitHub bounties on Flare",
-      url: "https://gitbounty.dev",
+      url: "https://app.gitbounty.fun",
       icons: [],
     },
     themeMode: "light",
+    // The Coinbase connector phones home to cca-lite.coinbase.com on every load
+    // and logs a console error whenever that host is unreachable. Nothing here
+    // needs it — Coston2 is reached through injected wallets and WalletConnect.
+    enableCoinbase: false,
     features: {
       analytics: false,
       email: false,
