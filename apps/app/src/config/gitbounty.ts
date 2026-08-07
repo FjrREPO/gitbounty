@@ -9,6 +9,8 @@ export const FLR_LOGO = "https://assets.coingecko.com/coins/images/28624/small/F
 
 export const CHAIN = { name: "Coston2", symbol: "C2FLR" } as const;
 
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+
 export const SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_SUBGRAPH_URL ??
   "https://api.goldsky.com/api/public/project_cm769b6m60y0a01sz7ze9ce2j/subgraphs/gitbounty-coston2/1.0.0/gn";

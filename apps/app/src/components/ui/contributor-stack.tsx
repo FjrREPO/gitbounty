@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { BlurImage } from "@/components/ui/blur-image";
 import { type Contributor, useContributors } from "@/lib/github";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +26,12 @@ function Avatar({
       className="group relative -ml-2.5 first:ml-0 transition-transform duration-150 hover:z-20 hover:-translate-y-1 hover:scale-110"
       style={{ zIndex: 10 - index }}
     >
-      <Image
+      <BlurImage
         src={contributor.avatarUrl}
-        alt={contributor.login}
+        alt={`@${contributor.login}`}
         width={px}
         height={px}
-        unoptimized
+        sizes={`${px}px`}
         className={cn(
           "rounded-full border-2 border-background ring-1 ring-foreground/20 bg-foreground/5",
           size === "lg" ? "size-14" : "size-7",
@@ -40,7 +40,7 @@ function Avatar({
       {/* Hover tooltip card, like a contributor spotlight. */}
       <span className="pointer-events-none absolute -top-14 left-1/2 z-30 hidden -translate-x-1/2 whitespace-nowrap rounded-xl border border-foreground/15 bg-background px-3.5 py-2 text-center shadow-xl shadow-black/40 group-hover:block">
         <span className="block text-xs font-bold text-foreground">@{contributor.login}</span>
-        <span className="block text-[10px] text-foreground/50">
+        <span className="block text-[10px] text-foreground/65">
           {compact(contributor.contributions)} contributions
         </span>
       </span>

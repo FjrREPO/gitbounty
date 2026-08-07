@@ -10,6 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@aejkatappaja/phantom-ui": "^1.6.1",
     "@base-ui/react": "^1.6.0",
     "@gsap/react": "^2.1.2",
     "@next/third-parties": "^16.2.10",

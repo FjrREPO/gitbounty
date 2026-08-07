@@ -17,6 +17,7 @@ func New(port int, h *handler.Handler, log *slog.Logger) *http.Server {
 	mux.HandleFunc("GET /api/v1/bounties", h.ListBounties)
 	mux.HandleFunc("GET /api/v1/bounties/{id}", h.GetBounty)
 	mux.HandleFunc("GET /api/v1/providers", h.ListProviders)
+	mux.HandleFunc("GET /api/v1/unresolvable", h.UnresolvableRepos)
 	mux.HandleFunc("GET /api/v1/github", h.GitHubMeta)
 
 	return &http.Server{

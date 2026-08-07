@@ -23,7 +23,7 @@ function Field({
     <label className="block">
       <span className="text-xs font-medium text-foreground/70">{label}</span>
       {children}
-      {hint ? <span className="mt-1 block text-[11px] text-foreground/40">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-[11px] text-foreground/65">{hint}</span> : null}
     </label>
   );
 }
