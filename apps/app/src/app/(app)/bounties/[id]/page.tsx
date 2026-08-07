@@ -11,10 +11,10 @@ import {
   MessagesSquareIcon,
   StarIcon,
 } from "lucide-react";
-import Image from "next/image";
 import { use, useState } from "react";
 import { keccak256, toHex } from "viem";
 import { useAccount, useWriteContract } from "wagmi";
+import { BlurImage } from "@/components/ui/blur-image";
 import { BountyProgress } from "@/components/ui/bounty-progress";
 import { ContributorStack } from "@/components/ui/contributor-stack";
 import { DetailRow } from "@/components/ui/detail-row";
@@ -70,7 +70,7 @@ function RegisterClaimModal({ bountyId, onClose }: { bountyId: string; onClose: 
           merged, an FDC attestation proves the merge and the escrow pays this wallet.
         </p>
         <label className="block">
-          <span className="text-xs text-foreground/50">PR number</span>
+          <span className="text-xs text-foreground/65">PR number</span>
           <input
             value={prNumber}
             onChange={(e) => setPrNumber(e.target.value.replace(/\D/g, ""))}
@@ -79,7 +79,7 @@ function RegisterClaimModal({ bountyId, onClose }: { bountyId: string; onClose: 
           />
         </label>
         <label className="block">
-          <span className="text-xs text-foreground/50">GitHub username</span>
+          <span className="text-xs text-foreground/65">GitHub username</span>
           <input
             value={githubLogin}
             onChange={(e) => setGithubLogin(e.target.value.trim())}
@@ -123,12 +123,12 @@ function RepoHero({ bounty }: { bounty: Bounty }) {
   return (
     <div className="border-b border-foreground/10 p-6">
       <div className="flex items-start gap-4">
-        <Image
+        <BlurImage
           src={avatarUrl(owner, 128)}
-          alt={owner}
+          alt=""
           width={56}
           height={56}
-          unoptimized
+          sizes="56px"
           className="size-14 shrink-0 rounded-2xl border border-foreground/10 bg-foreground/5"
         />
         <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ function RepoHero({ bounty }: { bounty: Bounty }) {
           <h2 className="mt-0.5 text-lg font-semibold leading-6 text-foreground">
             {issue?.title ?? `Issue #${bounty.issueNumber}`}
           </h2>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-foreground/50">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-foreground/65">
             <span className="font-medium uppercase tracking-wide text-foreground/35">Issue</span>
             {issue ? (
               <span
@@ -194,7 +194,7 @@ function RepoHero({ bounty }: { bounty: Bounty }) {
         </a>
       </div>
       <div className="mt-4 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-foreground/50">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-foreground/65">
           <span className="font-medium uppercase tracking-wide text-foreground/35">Repository</span>
           {repo?.language ? (
             <span className="inline-flex items-center gap-1.5">
@@ -229,7 +229,7 @@ function RepoHero({ bounty }: { bounty: Bounty }) {
               </span>
             </>
           ) : (
-            <span className="text-foreground/40">
+            <span className="text-foreground/65">
               {repoQuery.isLoading
                 ? "loading…"
                 : "stats unavailable — the on-chain data below is unaffected"}
@@ -237,7 +237,7 @@ function RepoHero({ bounty }: { bounty: Bounty }) {
           )}
         </div>
         {repo?.description ? (
-          <p className="mt-2 text-xs leading-relaxed text-foreground/50">{repo.description}</p>
+          <p className="mt-2 text-xs leading-relaxed text-foreground/65">{repo.description}</p>
         ) : null}
       </div>
     </div>
@@ -259,24 +259,24 @@ function ClaimRow({ bounty, claim }: { bounty: Bounty; claim: Claim }) {
     >
       <div className="flex min-w-0 items-center gap-3">
         {pull?.authorLogin ? (
-          <Image
+          <BlurImage
             src={avatarUrl(pull.authorLogin, 64)}
-            alt={pull.authorLogin}
+            alt={`@${pull.authorLogin}`}
             width={32}
             height={32}
-            unoptimized
+            sizes="32px"
             className="size-8 shrink-0 rounded-full border border-foreground/10"
           />
         ) : (
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground/5">
-            <GitPullRequestIcon className="size-4 text-foreground/50" />
+            <GitPullRequestIcon className="size-4 text-foreground/65" />
           </span>
         )}
         <div className="min-w-0">
           <div className="truncate text-xs font-medium text-foreground">
             {pull?.title ?? `PR #${claim.prNumber}`}
           </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-foreground/40">
+          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-foreground/65">
             {pull?.authorLogin ? <span>@{pull.authorLogin}</span> : null}
             <span className="font-mono">{shorten(claim.claimant)}</span>
             {pull ? (
@@ -298,7 +298,7 @@ function ClaimRow({ bounty, claim }: { bounty: Bounty; claim: Claim }) {
             <GitMergeIcon className="size-3" /> merged
           </span>
         ) : (
-          <span className="rounded-full bg-foreground/5 px-2.5 py-1 text-[10px] font-semibold uppercase text-foreground/50">
+          <span className="rounded-full bg-foreground/5 px-2.5 py-1 text-[10px] font-semibold uppercase text-foreground/65">
             {pull?.state ?? "pending"}
           </span>
         )}
@@ -318,7 +318,7 @@ function RewardPanel({ bounty }: { bounty: Bounty }) {
     <>
       <div className="flex flex-col gap-6 border-b border-foreground/10 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-foreground/40">
+          <div className="text-xs font-medium uppercase tracking-wide text-foreground/65">
             {bounty.status === "PAID" ? "Paid out" : "Reward"}
           </div>
           <div className="mt-1 flex items-baseline gap-2">
@@ -330,7 +330,7 @@ function RewardPanel({ bounty }: { bounty: Bounty }) {
               </FlrAmount>
             )}
           </div>
-          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-foreground/50">
+          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-foreground/65">
             {usdDenominated
               ? `Locked as ${formatFlr(bounty.amount)} FLR. The USD amount converts to FLR at the live FTSO price when it pays out, and any surplus returns to the funder.`
               : bounty.status === "PAID"
@@ -344,7 +344,7 @@ function RewardPanel({ bounty }: { bounty: Bounty }) {
       </div>
 
       <details className="group border-b border-foreground/10">
-        <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-3 text-xs font-medium text-foreground/50 transition-colors hover:text-foreground">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-3 text-xs font-medium text-foreground/65 transition-colors hover:text-foreground">
           On-chain details
           <ChevronDownIcon className="size-4 transition-transform group-open:rotate-180" />
         </summary>
@@ -414,7 +414,7 @@ function ContributorsSection({ repo }: { repo: string }) {
   return (
     <div className="border-t border-foreground/10 px-5 py-5">
       <h2 className="text-sm font-semibold text-foreground">Contributors</h2>
-      <p className="mt-0.5 text-xs text-foreground/40">
+      <p className="mt-0.5 text-xs text-foreground/65">
         Who maintains this repository — they review and merge your PR.
       </p>
       <div className="mt-6 flex justify-center pb-1 sm:justify-start">
@@ -445,7 +445,7 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
   if (!bounty) {
     return (
       <PageShell title={`Bounty #${id}`}>
-        <div className="p-8 text-center text-sm text-foreground/50">
+        <div className="p-8 text-center text-sm text-foreground/65">
           Bounty not found on the indexer.
         </div>
       </PageShell>
@@ -482,7 +482,7 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
           Pull requests claiming this bounty ({bounty.claims.length})
         </h2>
         {bounty.claims.length === 0 ? (
-          <p className="mt-2 max-w-lg text-xs leading-relaxed text-foreground/50">
+          <p className="mt-2 max-w-lg text-xs leading-relaxed text-foreground/65">
             {bounty.status === "PAID" ? (
               <>
                 This bounty was settled through the confidential path — the enclave verified the

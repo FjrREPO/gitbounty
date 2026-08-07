@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -83,7 +84,31 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	h.json(w, http.StatusOK, payload)
 }
 
-// ListBounties returns every bounty, newest first, with GitHub metadata.
+const (
+	defaultLimit = 12
+	maxLimit     = 50
+)
+
+// clampInt parses a query value, falling back when it is absent or unusable.
+func clampInt(raw string, fallback, min, max int) int {
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	if n < min {
+		return min
+	}
+	if n > max {
+		return max
+	}
+	return n
+}
+
+// ListBounties returns one page of bounties, newest first, with GitHub metadata.
+//
+// Paged rather than all-at-once because the response carries enriched GitHub
+// data: without a page the handler would do a metadata lookup per bounty in the
+// table, and the caller only ever renders a screenful.
 func (h *Handler) ListBounties(w http.ResponseWriter, r *http.Request) {
 	bounties, err := h.store.ListBounties(r.Context())
 	if err != nil {
@@ -91,23 +116,41 @@ func (h *Handler) ListBounties(w http.ResponseWriter, r *http.Request) {
 		h.error(w, http.StatusInternalServerError, "failed to list bounties")
 		return
 	}
+	q := r.URL.Query()
 	// Bounties whose repository does not exist on GitHub can never be
 	// claimed; hide them unless the caller explicitly asks for everything.
 	hidden := map[string]bool{}
-	if r.URL.Query().Get("include") != "all" {
+	if q.Get("include") != "all" {
 		if unresolvable, err := h.store.UnresolvableRepos(r.Context()); err == nil {
 			hidden = unresolvable
 		}
 	}
 
-	enriched := make([]EnrichedBounty, 0, len(bounties))
+	status := strings.ToUpper(strings.TrimSpace(q.Get("status")))
+	search := strings.ToLower(strings.TrimSpace(q.Get("search")))
+	matched := make([]domain.Bounty, 0, len(bounties))
 	for _, bounty := range bounties {
-		if hidden[bounty.Repo] {
-			continue
+		switch {
+		case hidden[bounty.Repo]:
+		case status != "" && status != "ALL" && !strings.EqualFold(string(bounty.Status), status):
+		case search != "" && !strings.Contains(strings.ToLower(bounty.Repo), search):
+		default:
+			matched = append(matched, bounty)
 		}
+	}
+
+	limit := clampInt(q.Get("limit"), defaultLimit, 1, maxLimit)
+	offset := clampInt(q.Get("offset"), 0, 0, len(matched))
+	page := matched[offset:min(offset+limit, len(matched))]
+
+	enriched := make([]EnrichedBounty, 0, len(page))
+	for _, bounty := range page {
 		enriched = append(enriched, h.enrich(r.Context(), bounty))
 	}
-	h.json(w, http.StatusOK, map[string]any{"bounties": enriched})
+	h.json(w, http.StatusOK, map[string]any{
+		"bounties": enriched,
+		"total":    len(matched),
+	})
 }
 
 // GetBounty returns one bounty by id.
@@ -178,6 +221,27 @@ func (h *Handler) GitHubMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.json(w, http.StatusOK, meta)
+}
+
+// UnresolvableRepos lists repositories GitHub has no record of.
+//
+// Bounties against them can never be claimed, and the enrichment loop already
+// tracks which ones 404. Exposing the set lets a caller that reads bounties
+// straight from the subgraph drop them too, instead of rendering a card with
+// no repository behind it.
+func (h *Handler) UnresolvableRepos(w http.ResponseWriter, r *http.Request) {
+	repos, err := h.store.UnresolvableRepos(r.Context())
+	if err != nil {
+		h.log.Error("unresolvable repos", "error", err)
+		h.error(w, http.StatusInternalServerError, "failed to load unresolvable repos")
+		return
+	}
+	list := make([]string, 0, len(repos))
+	for repo := range repos {
+		list = append(list, repo)
+	}
+	sort.Strings(list)
+	h.json(w, http.StatusOK, map[string]any{"repos": list})
 }
 
 // ListProviders returns the LLM options for the BYOK model picker.

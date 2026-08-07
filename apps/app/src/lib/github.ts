@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
 
 /** Avatar without touching the rate-limited API. */
-export function avatarUrl(owner: string, size = 96): string {
+export function avatarUrl(owner: string, size = 80): string {
   return `https://github.com/${owner}.png?size=${size}`;
 }
 

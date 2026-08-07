@@ -121,7 +121,7 @@ export function NotFound() {
           </motion.h1>
 
           <motion.p
-            className="mb-8 select-none text-lg text-foreground/50 md:mb-12 md:text-xl"
+            className="mb-8 select-none text-lg text-foreground/65 md:mb-12 md:text-xl"
             variants={itemVariants}
           >
             This page seems to have vanished into the void

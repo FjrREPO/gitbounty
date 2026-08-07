@@ -23,7 +23,7 @@ export function ConnectButton() {
         <button
           type="button"
           onClick={() => disconnect()}
-          className="cursor-pointer rounded-full px-2 py-1.5 text-xs text-foreground/40 transition-colors hover:text-foreground"
+          className="cursor-pointer rounded-full px-2 py-1.5 text-xs text-foreground/65 transition-colors hover:text-foreground"
         >
           Logout
         </button>

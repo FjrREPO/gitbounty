@@ -44,7 +44,7 @@ export function SiteHeader() {
               alt="Flare"
               width={14}
               height={14}
-              unoptimized
+              unoptimized // fixed tiny local mark; optimizing costs more than it saves
               className="size-3.5 rounded-full"
             />
             {CHAIN.name}
@@ -60,7 +60,7 @@ export function SiteHeader() {
                 "cursor-pointer rounded-lg px-4 py-2 text-sm transition-colors",
                 pathname.startsWith(link.href)
                   ? "font-medium text-foreground"
-                  : "text-foreground/50 hover:text-foreground",
+                  : "text-foreground/65 hover:text-foreground",
               )}
             >
               {link.label}
@@ -80,7 +80,7 @@ export function SiteHeader() {
               "shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors",
               pathname.startsWith(link.href)
                 ? "bg-foreground/5 font-medium text-foreground"
-                : "text-foreground/50",
+                : "text-foreground/65",
             )}
           >
             {link.label}
