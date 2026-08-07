@@ -15,6 +15,16 @@ const server = createVerifierService({
 
 server.listen(config.port, () => {
   console.info(
-    `[tee-verifier] listening on ${config.port} — signer ${signer.address}, escrow ${config.escrowAddress}, chain ${config.chainId}`,
+    `[tee-verifier] listening on ${config.port} — escrow ${config.escrowAddress}, chain ${config.chainId}`,
   );
+  console.info(`[tee-verifier] signer address: ${signer.address}`);
+  if (config.keyWasInjected) {
+    console.warn(
+      "[tee-verifier] signing key was injected — whoever supplied it can forge payouts; omit TEE_SIGNING_KEY to generate one inside the enclave",
+    );
+  } else {
+    console.info(
+      "[tee-verifier] key generated inside the enclave — set the escrow's teeSigner to the address above",
+    );
+  }
 });
