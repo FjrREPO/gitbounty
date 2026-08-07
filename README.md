@@ -23,7 +23,8 @@ packages/
   plugin-github/  GitHub REST client (issues, PRs, merge verification)
   plugin-fdc/     Web2Json attestation requests
   plugin-ftso/    FTSOv2 price provider via FlareContractRegistry
-  plugin-tee/     Confidential merge verifier
+  plugin-tee/     Confidential merge verifier + enclave service
+  contracts/      GitBountyEscrow (Foundry, UUPS upgradeable)
 ```
 
 ## Development
@@ -50,6 +51,24 @@ The LLM is pluggable — set any one key: `ANTHROPIC_API_KEY` (Claude, preferred
 
 Optional: `GITBOUNTY_LABEL` (default `bounty`), `GITBOUNTY_NETWORK` (default `coston2`), `GITBOUNTY_PAYOUT_ADDRESS`.
 
+### Running the TEE verifier
+
+Proves merges inside a Confidential Space enclave and signs escrow payouts.
+The escrow's `teeSigner` must equal the address it logs on boot.
+
+```bash
+export GITHUB_TOKEN=ghp_...                # held only in enclave memory
+export TEE_SIGNING_KEY=0x...               # enclave signing key
+export ESCROW_ADDRESS=0xa8adefe2c8f0f71a585a73c1259997f593f9e463
+node packages/plugin-tee/dist/main.js      # POST /verify, GET /healthz
+```
+
+Deploy it to an Intel TDX VM (image + launcher secrets, never baked in):
+
+```bash
+PROJECT_ID=my-project ./packages/plugin-tee/deploy-confidential-space.sh
+```
+
 Quality gates run on pre-commit, pre-push, and CI (Biome, vitest, `forge fmt`, `forge test`).
 
 ## Deployment (Coston2)
@@ -60,6 +79,10 @@ Quality gates run on pre-commit, pre-push, and CI (Biome, vitest, `forge fmt`, `
 | Implementation | [`0x9daf66b75d348d4f90b125a282bbfa608ecec13c`](https://coston2-explorer.flare.network/address/0x9daf66b75d348d4f90b125a282bbfa608ecec13c) |
 
 Source verified on the Coston2 explorer. FtsoV2 and FdcVerification are resolved through the FlareContractRegistry at deploy time.
+
+The confidential path is proven end-to-end on-chain: a signature produced by
+`PayoutSigner` was accepted by `claimWithTeeProof` in
+[`0x83e349b3…`](https://coston2-explorer.flare.network/tx/0x83e349b37924d5200bbf6be5e31952e8051b3db1da0d186481ccc347c9662577).
 
 ## License
 
