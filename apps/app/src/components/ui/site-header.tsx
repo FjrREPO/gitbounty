@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CHAIN, FLR_LOGO } from "@/config/gitbounty";
 import { cn } from "@/lib/utils";
 
 // Client-only: wagmi hooks must never run during SSR.
@@ -38,17 +37,6 @@ export function SiteHeader() {
             priority
           />
           <span className="text-lg font-medium tracking-[-0.04em] text-foreground">GitBounty</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-2.5 py-1 text-[10px] uppercase tracking-wide text-foreground/60">
-            <Image
-              src={FLR_LOGO}
-              alt="Flare"
-              width={14}
-              height={14}
-              unoptimized // fixed tiny local mark; optimizing costs more than it saves
-              className="size-3.5 rounded-full"
-            />
-            {CHAIN.name}
-          </span>
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
