@@ -183,12 +183,17 @@ contract GitBountyEscrow is IGitBountyEscrow, Initializable, OwnableUpgradeable,
 
         bytes memory payload = EnclaveAttestation.verify(token, $.attestationModulus, $.attestationExponent);
 
+        // `image_digest` is the only claim that gates which workload may
+        // nominate a signer, and a workload controls earlier fields such as
+        // `eat_nonce`. Read it from inside `submods`, where only Google writes.
+        uint256 submods = EnclaveAttestation.offsetOf(payload, '"submods"');
+
         // The token must come from a Confidential Space enclave running the
         // approved image, and be addressed to this escrow.
         if (
             keccak256(EnclaveAttestation.claim(payload, "hwmodel")) != keccak256("GCP_INTEL_TDX")
                 || keccak256(EnclaveAttestation.claim(payload, "swname")) != keccak256("CONFIDENTIAL_SPACE")
-                || keccak256(EnclaveAttestation.claim(payload, "image_digest"))
+                || keccak256(EnclaveAttestation.claim(payload, "image_digest", submods))
                     != keccak256(bytes($.enclaveImageDigest))
                 || keccak256(EnclaveAttestation.claim(payload, "aud"))
                     != keccak256(bytes(Strings.toHexString(address(this))))
