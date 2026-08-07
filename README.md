@@ -80,9 +80,22 @@ Quality gates run on pre-commit, pre-push, and CI (Biome, vitest, `forge fmt`, `
 
 Source verified on the Coston2 explorer. FtsoV2 and FdcVerification are resolved through the FlareContractRegistry at deploy time.
 
-The confidential path is proven end-to-end on-chain: a signature produced by
-`PayoutSigner` was accepted by `claimWithTeeProof` in
-[`0x83e349b3…`](https://coston2-explorer.flare.network/tx/0x83e349b37924d5200bbf6be5e31952e8051b3db1da0d186481ccc347c9662577).
+Both claim paths are proven end-to-end on Coston2:
+
+- **FDC Web2Json** — the agent's merged PR was attested by the FDC validator
+  set and the escrow paid out against the Merkle proof:
+  [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
+  Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
+- **Confidential Compute** — a signature produced by the enclave `PayoutSigner`
+  was accepted by `claimWithTeeProof`:
+  [`0x83e349b3…`](https://coston2-explorer.flare.network/tx/0x83e349b37924d5200bbf6be5e31952e8051b3db1da0d186481ccc347c9662577).
+
+### Claiming a public-repo bounty
+
+```bash
+PK=0x... BOUNTY_ID=4 REPO=owner/name PR=2 \
+  node packages/plugin-fdc/scripts/claim.mjs
+```
 
 ## License
 
