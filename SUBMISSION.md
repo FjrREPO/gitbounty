@@ -44,6 +44,8 @@ paying: the contract only releases funds against a proof it verifies itself.
   autonomously by the agent in PR
   [#2](https://github.com/FjrREPO/gitbounty-demo/pull/2), merged, and paid out
   on-chain through both verification paths.
+- **Live app:** https://app.gitbounty.fun
+- **API:** https://api.gitbounty.fun/api/v1/bounties
 - **Video:** _(to record)_
 - **Web app:** Next.js frontend in `apps/app` (bounty board, funding flow,
   claim registration, agent BYOK model picker), with the Go API in `apps/api`
