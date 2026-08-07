@@ -6,7 +6,7 @@ A maintainer escrows a reward on a GitHub issue. Anyone — a developer or an au
 
 ## The agent
 
-`@gitbounty/agent` is an autonomous worker that earns bounties end-to-end: it watches repos for `bounty`-labeled issues, generates a fix with Claude, pushes a branch, and opens a PR that quotes the reward in FLR at the live FTSOv2 price. When the maintainer merges, the escrow pays the agent's own wallet — a working sample of an on-chain agent economy.
+`@gitbounty/agent` is an autonomous worker that earns bounties end-to-end: it watches repos for `bounty`-labeled issues, generates a fix with the LLM you configure, pushes a branch, and opens a PR that quotes the reward in FLR at the live FTSOv2 price. When the maintainer merges, the escrow pays the agent's own wallet — a working sample of an on-chain agent economy.
 
 ## Built on Flare
 
@@ -79,7 +79,7 @@ Quality gates run on pre-commit, pre-push, and CI (Biome, vitest, `forge fmt`, `
 | Contract | Address |
 | --- | --- |
 | `GitBountyEscrow` (UUPS proxy) | [`0xa8adefe2c8f0f71a585a73c1259997f593f9e463`](https://coston2-explorer.flare.network/address/0xa8adefe2c8f0f71a585a73c1259997f593f9e463) |
-| Implementation | [`0x9daf66b75d348d4f90b125a282bbfa608ecec13c`](https://coston2-explorer.flare.network/address/0x9daf66b75d348d4f90b125a282bbfa608ecec13c) |
+| Implementation | [`0x5290b2128dbd996c5b12026de7010a5fbd7ede54`](https://coston2-explorer.flare.network/address/0x5290b2128dbd996c5b12026de7010a5fbd7ede54) |
 
 Source verified on the Coston2 explorer. FtsoV2 and FdcVerification are resolved through the FlareContractRegistry at deploy time.
 
@@ -87,21 +87,21 @@ Both claim paths are proven end-to-end on Coston2:
 
 - **FDC Web2Json** — the agent's merged PR was attested by the FDC validator
   set and the escrow paid out against the Merkle proof:
-  [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
+  [`0x8c53c686…`](https://coston2-explorer.flare.network/tx/0x8c53c686ae2912a056147196ba17f4c22e2c8a393f7ddd2405f557e5bdb996c2).
   Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
 - **Confidential Compute** — the verifier runs on a Google Confidential Space
   VM (Intel TDX) and mints its own signing key inside the enclave. The escrow
   **verifies the Google-signed attestation on-chain** (RS256 + image digest +
   expiry) and takes the signer from it, so nobody chooses the key by hand:
-  [`0x97920460…`](https://coston2-explorer.flare.network/tx/0x979204605c769fa9069d149ad3f4a5ddb96fdac5bbe14411d704c4a106d0778e)
+  [`0x90b57035…`](https://coston2-explorer.flare.network/tx/0x90b57035c56394ddd87cc267ac080e91a94d718b18de1070c893b1acfabbc296)
   registered the signer, and
-  [`0xb4fafbff…`](https://coston2-explorer.flare.network/tx/0xb4fafbff8aa7d0f6f524af65db7bcc7337a05519913b1eba2191e40148555256)
+  [`0x77a77057…`](https://coston2-explorer.flare.network/tx/0x77a77057b29f9f451a0404ef3e407b23a254828768fe6a2484185c5a9dcf0558)
   paid a bounty against it.
 
 ### Claiming a public-repo bounty
 
 ```bash
-PK=0x... BOUNTY_ID=4 REPO=owner/name PR=2 \
+PK=0x... BOUNTY_ID=10 REPO=owner/name PR=2 \
   node packages/plugin-fdc/scripts/claim.mjs
 ```
 
