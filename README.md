@@ -54,14 +54,17 @@ Optional: `GITBOUNTY_LABEL` (default `bounty`), `GITBOUNTY_NETWORK` (default `co
 ### Running the TEE verifier
 
 Proves merges inside a Confidential Space enclave and signs escrow payouts.
-The escrow's `teeSigner` must equal the address it logs on boot.
 
 ```bash
 export GITHUB_TOKEN=ghp_...                # held only in enclave memory
-export TEE_SIGNING_KEY=0x...               # enclave signing key
 export ESCROW_ADDRESS=0xa8adefe2c8f0f71a585a73c1259997f593f9e463
 node packages/plugin-tee/dist/main.js      # POST /verify, GET /healthz
 ```
+
+The signing key is generated **inside** the enclave — nobody, including
+whoever deployed it, can sign payouts. Read the address from `/healthz` and
+point the escrow at it with `setTeeSigner(address)`. Setting `TEE_SIGNING_KEY`
+overrides this for local testing and logs a warning.
 
 Deploy it to an Intel TDX VM (image + launcher secrets, never baked in):
 
@@ -87,10 +90,11 @@ Both claim paths are proven end-to-end on Coston2:
   [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509).
   Reproduce it with `packages/plugin-fdc/scripts/claim.mjs`.
 - **Confidential Compute** — the verifier runs on a Google Confidential Space
-  VM (Intel TDX). It returns a Google-signed attestation token binding its
-  signing key (`eat_nonce`) to the published image, and the signature it
-  produced settled in
-  [`0xa75ec5ac…`](https://coston2-explorer.flare.network/tx/0xa75ec5acb34c1461bf3ed34291bd709a7aadd12fdf38a789e946ef1c9b3fcbc3).
+  VM (Intel TDX) and mints its own signing key inside the enclave, so no
+  operator can forge a payout. Its Google-signed attestation binds that key
+  (`eat_nonce`) to the published image, and the signature it produced settled
+  in
+  [`0x533de2c6…`](https://coston2-explorer.flare.network/tx/0x533de2c6b388aefd9b236ae307adec768dbd57ec29d0bd74ae067ebe0e2843df).
 
 ### Claiming a public-repo bounty
 

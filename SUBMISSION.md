@@ -95,7 +95,7 @@ Subgraph: `gitbounty-coston2` on Goldsky.
 | Path | Transaction |
 | --- | --- |
 | FDC Web2Json | [`0xccdd041e…`](https://coston2-explorer.flare.network/tx/0xccdd041e560a503916a30c5b42dd2b25fb81a12651dd8e34834b881dc49b8509) |
-| Confidential Compute | [`0xa75ec5ac…`](https://coston2-explorer.flare.network/tx/0xa75ec5acb34c1461bf3ed34291bd709a7aadd12fdf38a789e946ef1c9b3fcbc3) |
+| Confidential Compute | [`0x533de2c6…`](https://coston2-explorer.flare.network/tx/0x533de2c6b388aefd9b236ae307adec768dbd57ec29d0bd74ae067ebe0e2843df) |
 
 The confidential claim came from a verifier running on a live Confidential
 Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
@@ -106,9 +106,8 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 
 1. **Mainnet beta** — deploy to Flare mainnet with the protocol fee enabled.
 2. **Private-repo pilot** — onboard one closed-source team onto the
-   Confidential Compute path; harden the enclave (key managed by the enclave
-   rather than injected, reproducible image builds, attestation checked
-   on-chain rather than out-of-band).
+   Confidential Compute path; harden further with reproducible image builds
+   and on-chain attestation checks.
 3. **Agent marketplace** — publish the agent SDK so third-party agents compete
    for the same bounties.
 4. **FAssets** — let bounties be funded and paid in FXRP, so XRP holders can
@@ -117,7 +116,10 @@ Space VM. Its attestation decodes to `hwmodel: GCP_INTEL_TDX`,
 ## Status and honest gaps
 
 - Both claim paths are proven on testnet with real transactions, not mocks.
-- The enclave currently receives its signing key as a launcher secret; the
-  stronger design derives it inside the enclave so no human ever sees it. This
-  is the top item in the roadmap's hardening step.
+- The enclave mints its own signing key and never exports it, so the operator
+  cannot forge payouts. The key does not survive a VM restart; sealing it to a
+  KMS key released only against an attestation is the next hardening step.
+- The attestation is verified off-chain by whoever trusts the enclave, not by
+  the escrow itself. Verifying the JWT on-chain would remove the last manual
+  step in pointing `teeSigner` at a new enclave.
 - No production users yet — the traction so far is the working system itself.

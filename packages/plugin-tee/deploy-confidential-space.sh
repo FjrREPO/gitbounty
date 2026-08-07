@@ -18,8 +18,10 @@ SA_NAME="${SA_NAME:-gitbounty-tee}"
 SERVICE_ACCOUNT="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 : "${GITHUB_TOKEN:?set GITHUB_TOKEN}"
-: "${TEE_SIGNING_KEY:?set TEE_SIGNING_KEY}"
 : "${ESCROW_ADDRESS:?set ESCROW_ADDRESS}"
+# TEE_SIGNING_KEY is deliberately optional: leaving it unset makes the enclave
+# mint its own key, so not even the operator running this script can sign
+# payouts. Point the escrow's teeSigner at the address /healthz reports.
 CHAIN_ID="${CHAIN_ID:-114}"
 
 echo "==> Enabling APIs"
@@ -72,7 +74,7 @@ gcloud compute instances create "${VM_NAME}" \
   --service-account "${SERVICE_ACCOUNT}" \
   --scopes cloud-platform \
   --tags gitbounty-tee \
-  --metadata "^~^tee-image-reference=${IMAGE}~tee-container-log-redirect=true~tee-env-GITHUB_TOKEN=${GITHUB_TOKEN}~tee-env-TEE_SIGNING_KEY=${TEE_SIGNING_KEY}~tee-env-ESCROW_ADDRESS=${ESCROW_ADDRESS}~tee-env-CHAIN_ID=${CHAIN_ID}"
+  --metadata "^~^tee-image-reference=${IMAGE}~tee-container-log-redirect=true~tee-env-GITHUB_TOKEN=${GITHUB_TOKEN}${TEE_SIGNING_KEY:+~tee-env-TEE_SIGNING_KEY=${TEE_SIGNING_KEY}}~tee-env-ESCROW_ADDRESS=${ESCROW_ADDRESS}~tee-env-CHAIN_ID=${CHAIN_ID}"
 
 echo "==> Allowing inbound verifier traffic"
 gcloud compute firewall-rules describe gitbounty-tee-8080 --project "${PROJECT_ID}" >/dev/null 2>&1 ||
@@ -81,6 +83,9 @@ gcloud compute firewall-rules describe gitbounty-tee-8080 --project "${PROJECT_I
     --description "GitBounty enclave verifier" >/dev/null
 
 echo
-echo "Deployed. The enclave's signer address must equal the escrow's teeSigner."
+echo "Deployed. Read the enclave's signer address and set it on the escrow:"
+echo "  curl http://<EXTERNAL_IP>:8080/healthz"
+echo "  cast send \$ESCROW_ADDRESS 'setTeeSigner(address)' <signer>"
+echo
 echo "Check the workload log:"
 echo "  gcloud compute instances get-serial-port-output ${VM_NAME} --zone ${ZONE} --project ${PROJECT_ID} | grep tee-verifier"
