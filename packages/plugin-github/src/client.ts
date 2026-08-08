@@ -31,8 +31,11 @@ export interface CreatedPullRequest {
 
 const API_BASE = "https://api.github.com";
 
+// The `owner/repo` prefix is captured, not discarded: GitHub treats
+// `fixes other/repo#42` as closing an issue somewhere else entirely, and a
+// payout must not accept it as closing #42 here.
 const CLOSING_KEYWORDS =
-  /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w.-]+\/[\w.-]+)?#(\d+)/gi;
+  /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:([\w.-]+\/[\w.-]+))?#(\d+)/gi;
 
 /**
  * Minimal GitHub REST client. In the TEE verification path this runs inside
@@ -54,7 +57,7 @@ export class GitHubClient {
       merged: pr.merged,
       authorLogin: pr.user?.login ?? "",
       mergedAt: pr.merged_at,
-      closesIssues: extractClosedIssues(pr.body ?? ""),
+      closesIssues: extractClosedIssues(pr.body ?? "", `${ref.owner}/${ref.repo}`),
     };
   }
 
@@ -144,14 +147,29 @@ export class GitHubClient {
   }
 }
 
-/** Parses issue numbers referenced with closing keywords in a PR body. */
-export function extractClosedIssues(body: string): number[] {
+/**
+ * Issue numbers a PR body closes **in `repo`**.
+ *
+ * A reference qualified with a different repository is dropped. Without that,
+ * a merged pull request whose body happens to say `fixes upstream/lib#42`
+ * would read as closing issue 42 of the repository it lives in — and that is
+ * what a bounty pays against.
+ *
+ * Omitting `repo` keeps every reference, which is only safe when the caller
+ * has already established the context.
+ */
+export function extractClosedIssues(body: string, repo?: string): number[] {
   const issues = new Set<number>();
   for (const match of body.matchAll(CLOSING_KEYWORDS)) {
-    const num = match[1];
-    if (num !== undefined) {
-      issues.add(Number.parseInt(num, 10));
+    const [, qualifier, num] = match;
+    if (num === undefined) {
+      continue;
     }
+    // Unqualified means "this repository", which is what we want.
+    if (qualifier && repo && qualifier.toLowerCase() !== repo.toLowerCase()) {
+      continue;
+    }
+    issues.add(Number.parseInt(num, 10));
   }
   return [...issues];
 }
