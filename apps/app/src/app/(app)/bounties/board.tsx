@@ -9,15 +9,16 @@ import { Phantom } from "@/components/ui/phantom";
 import { formatFlr } from "@/lib/format";
 import {
   type Bounty,
-  type BountyStatus,
+  type BountyFilter,
   useInfiniteBounties,
   useProtocolStats,
 } from "@/lib/subgraph";
 import { cn } from "@/lib/utils";
 
-const FILTERS: { label: string; value: BountyStatus | "ALL" }[] = [
+const FILTERS: { label: string; value: BountyFilter }[] = [
   { label: "All", value: "ALL" },
   { label: "Open", value: "OPEN" },
+  { label: "Expired", value: "EXPIRED" },
   { label: "Paid", value: "PAID" },
   { label: "Reclaimed", value: "RECLAIMED" },
 ];
@@ -36,7 +37,7 @@ function useDebounced<T>(value: T, ms: number): T {
 
 export function BountyBoard({ initialBounties }: { initialBounties: Bounty[] }) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<BountyStatus | "ALL">("ALL");
+  const [filter, setFilter] = useState<BountyFilter>("ALL");
   const debouncedSearch = useDebounced(search, 300);
 
   const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -73,7 +74,7 @@ export function BountyBoard({ initialBounties }: { initialBounties: Bounty[] }) 
           {stats ? (
             <div className="hidden text-right text-xs text-foreground/65 sm:block">
               <div>
-                {stats.openBounties} open · {stats.totalBounties} total
+                {stats.openBounties} funded · {stats.totalBounties} total
               </div>
               <div>{formatFlr(stats.totalPaidWei)} FLR paid out</div>
             </div>
