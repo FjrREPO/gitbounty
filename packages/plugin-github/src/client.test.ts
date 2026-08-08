@@ -194,3 +194,29 @@ describe("issue and pull request operations (mocked API)", () => {
     expect(JSON.parse(init.body)).toMatchObject({ head: "gitbounty/issue-7", base: "main" });
   });
 });
+
+// Regression: the closing-keyword pattern captured the `owner/repo` prefix and
+// threw it away, so a merged PR saying `fixes upstream/lib#42` read as closing
+// issue 42 of the repository it lives in — which is what a bounty pays against.
+describe("extractClosedIssues repository scoping", () => {
+  it("drops references qualified with another repository", () => {
+    expect(extractClosedIssues("Fixes someoneelse/otherrepo#42", "acme/demo")).toEqual([]);
+  });
+
+  it("keeps unqualified references, which mean this repository", () => {
+    expect(extractClosedIssues("Fixes #42", "acme/demo")).toEqual([42]);
+  });
+
+  it("keeps references qualified with this repository, ignoring case", () => {
+    expect(extractClosedIssues("Closes AcMe/Demo#42", "acme/demo")).toEqual([42]);
+  });
+
+  it("keeps everything when no repository is given", () => {
+    expect(extractClosedIssues("Fixes other/repo#42").sort()).toEqual([42]);
+  });
+
+  it("separates a mixed body", () => {
+    const body = "Closes #7. Also fixes upstream/lib#7 and resolves acme/demo#9.";
+    expect(extractClosedIssues(body, "acme/demo").sort((a, b) => a - b)).toEqual([7, 9]);
+  });
+});
