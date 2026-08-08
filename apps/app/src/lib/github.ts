@@ -90,7 +90,9 @@ function useApiMeta(repo: string, issueNumber?: string) {
           retry: 0,
         })
         .json<ApiMeta>(),
-    enabled: Boolean(API_URL),
+    // A caller may render before the bounty resolves; an empty repo is a
+    // guaranteed 400 at the API, so do not ask.
+    enabled: Boolean(API_URL) && repo.includes("/"),
     staleTime: 60_000,
     retry: false,
   });
