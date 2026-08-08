@@ -68,16 +68,32 @@ async function query<T>(gql: string): Promise<T> {
 export const PAGE_SIZE = 12;
 
 /**
- * Bounties for the board, one page at a time.
- *
- * Status and search go into the subgraph `where` clause rather than being
- * filtered after the fact: filtering client-side would only ever search the
- * pages already scrolled past, which silently hides matches.
+ * What the filter chips select. Not the same set as the escrow's `status`:
+ * "expired" is a funded bounty whose deadline has passed, which the contract
+ * has no state for. It is a pure function of `expiresAt`, so the subgraph can
+ * answer it and the filter stays honest against what the chips show.
  */
+export type BountyFilter = BountyStatus | "ALL" | "EXPIRED";
+
 export interface PageArgs {
-  status: BountyStatus | "ALL";
+  status: BountyFilter;
   search: string;
   skip: number;
+}
+
+function whereClause(status: BountyFilter, search: string, nowSeconds: number): string {
+  const parts = [
+    status === "EXPIRED"
+      ? `status: OPEN, expiresAt_lte: ${nowSeconds}`
+      : // "Open" must mean claimable, so it excludes bounties past their deadline.
+        status === "OPEN"
+        ? `status: OPEN, expiresAt_gt: ${nowSeconds}`
+        : status === "ALL"
+          ? null
+          : `status: ${status}`,
+    search ? `repo_contains_nocase: ${JSON.stringify(search)}` : null,
+  ].filter(Boolean);
+  return parts.join(", ");
 }
 
 /**
@@ -86,12 +102,7 @@ export interface PageArgs {
  * browser has parsed the bundle and made the round trip itself.
  */
 export async function fetchBountiesPage({ status, search, skip }: PageArgs): Promise<Bounty[]> {
-  const where = [
-    status === "ALL" ? null : `status: ${status}`,
-    search ? `repo_contains_nocase: ${JSON.stringify(search)}` : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const where = whereClause(status, search, Math.floor(Date.now() / 1000));
 
   const data = await query<{ bounties: Bounty[] }>(
     `{
@@ -107,12 +118,19 @@ export async function fetchBountiesPage({ status, search, skip }: PageArgs): Pro
   return data.bounties;
 }
 
+/**
+ * Bounties for the board, one page at a time.
+ *
+ * The filter goes into the subgraph `where` clause rather than being applied
+ * after the fact: filtering client-side would only ever search the pages
+ * already scrolled past, which silently hides matches.
+ */
 export function useInfiniteBounties({
   status,
   search,
   initialBounties,
 }: {
-  status: BountyStatus | "ALL";
+  status: BountyFilter;
   search: string;
   initialBounties?: Bounty[];
 }) {
