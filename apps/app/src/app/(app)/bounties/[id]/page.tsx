@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangleIcon,
   ChevronDownIcon,
   CircleDotIcon,
   ExternalLinkIcon,
@@ -24,6 +25,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ESCROW_ABI, ESCROW_ADDRESS, EXPLORER_URL } from "@/config/gitbounty";
+import { canReclaim, displayStatus } from "@/lib/bounty-state";
 import { formatFlr, formatUsdCents, shorten, timeLeft } from "@/lib/format";
 import {
   avatarUrl,
@@ -307,6 +309,97 @@ function ClaimRow({ bounty, claim }: { bounty: Bounty; claim: Claim }) {
   );
 }
 
+/**
+ * A funded bounty whose issue GitHub already shows as closed.
+ *
+ * Not a dead end, and not an error: the escrow releases against a *merged pull
+ * request*, not against the issue's state. Somebody almost certainly fixed it
+ * without going through here, and that person can still claim. Saying nothing
+ * is the bad outcome — the badge reads OPEN and a contributor starts work on
+ * something that is already done.
+ */
+function StateNotice({ bounty }: { bounty: Bounty }) {
+  const { address } = useAccount();
+  const { data: issue } = useIssueInfo(bounty.repo, bounty.issueNumber);
+  const status = displayStatus(bounty, issue?.state);
+  const { writeContractAsync, isPending } = useWriteContract();
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  if (status !== "STALE" && status !== "EXPIRED") {
+    return null;
+  }
+
+  const reclaimable = canReclaim(bounty, address);
+
+  async function reclaim() {
+    setError(null);
+    try {
+      setTxHash(
+        await writeContractAsync({
+          address: ESCROW_ADDRESS,
+          abi: ESCROW_ABI,
+          functionName: "reclaim",
+          args: [BigInt(bounty.bountyId)],
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message.split("\n")[0] : String(err));
+    }
+  }
+
+  return (
+    <div className="border-b border-amber-600/25 bg-amber-500/10 px-6 py-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden />
+        <div className="text-xs leading-relaxed text-foreground/80">
+          {status === "STALE" ? (
+            <>
+              <strong className="font-semibold text-foreground">
+                Issue #{bounty.issueNumber} is already closed on GitHub.
+              </strong>{" "}
+              The reward is still escrowed, and payout is proven from a merged pull request rather
+              than from the issue being open — so if your PR closed it, register your claim below.
+              Otherwise the funder can take the reward back when it expires{" "}
+              {timeLeft(bounty.expiresAt)}.
+            </>
+          ) : (
+            <>
+              <strong className="font-semibold text-foreground">This bounty has expired.</strong> No
+              claim can settle against it now; the escrowed reward stays locked until the funder
+              withdraws it.
+            </>
+          )}
+          {reclaimable ? (
+            <div className="mt-3">
+              {txHash ? (
+                <a
+                  href={`${EXPLORER_URL}/tx/${txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold text-emerald-700 underline"
+                >
+                  Reward returned — view transaction
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={reclaim}
+                  disabled={isPending}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isPending ? "Confirm in wallet…" : `Reclaim ${formatFlr(bounty.amount)} FLR`}
+                </button>
+              )}
+              {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Money and lifecycle up front; raw on-chain facts tucked underneath. */
 function RewardPanel({ bounty }: { bounty: Bounty }) {
   const usdDenominated = bounty.rewardUsdCents !== "0";
@@ -316,6 +409,7 @@ function RewardPanel({ bounty }: { bounty: Bounty }) {
 
   return (
     <>
+      <StateNotice bounty={bounty} />
       <div className="flex flex-col gap-6 border-b border-foreground/10 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-foreground/65">
@@ -429,6 +523,10 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
   const { data: bounty, isLoading } = useBounty(id);
   const { isConnected } = useAccount();
   const [claimOpen, setClaimOpen] = useState(false);
+  // Hooks cannot sit behind the loading guards below, so resolve the issue with
+  // whatever the bounty gives us and let the query no-op until it arrives.
+  const { data: issue } = useIssueInfo(bounty?.repo ?? "", bounty?.issueNumber ?? "0");
+  const headerStatus = bounty ? displayStatus(bounty, issue?.state) : "OPEN";
 
   if (isLoading) {
     return (
@@ -456,11 +554,11 @@ export default function BountyDetailPage({ params }: { params: Promise<{ id: str
     <PageShell
       title={
         <span className="flex items-center gap-3">
-          Bounty #{bounty.bountyId} <StatusChip status={bounty.status} />
+          Bounty #{bounty.bountyId} <StatusChip status={headerStatus} />
         </span>
       }
       actions={
-        bounty.status === "OPEN" && isConnected ? (
+        headerStatus !== "EXPIRED" && bounty.status === "OPEN" && isConnected ? (
           <button
             type="button"
             onClick={() => setClaimOpen(true)}
