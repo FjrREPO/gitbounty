@@ -7,6 +7,7 @@ import { ContributorStack } from "@/components/ui/contributor-stack";
 import { FlrAmount } from "@/components/ui/flr-amount";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusChip } from "@/components/ui/status-chip";
+import { displayStatus } from "@/lib/bounty-state";
 import { formatFlr, formatUsdCents, timeLeft } from "@/lib/format";
 import { avatarUrl, languageColor, useIssueInfo, useRepoInfo } from "@/lib/github";
 import type { Bounty } from "@/lib/subgraph";
@@ -65,6 +66,7 @@ export function BountyCard({ bounty, priority }: { bounty: Bounty; priority?: bo
   const issue = issueQuery.data;
   const ghLoading = repoQuery.isLoading || issueQuery.isLoading;
   const isUsd = bounty.rewardUsdCents !== "0";
+  const status = displayStatus(bounty, issue?.state);
 
   return (
     <Link href={`/bounties/${bounty.bountyId}`} className={CARD}>
@@ -91,7 +93,7 @@ export function BountyCard({ bounty, priority }: { bounty: Bounty; priority?: bo
             <div className="text-[11px] text-foreground/65">issue #{bounty.issueNumber}</div>
           </div>
         </div>
-        <StatusChip status={bounty.status} />
+        <StatusChip status={status} />
       </div>
 
       {ghLoading ? (
@@ -167,7 +169,9 @@ export function BountyCard({ bounty, priority }: { bounty: Bounty; priority?: bo
                 {bounty.claims.length} claim{bounty.claims.length > 1 ? "s" : ""}
               </span>
             ) : null}
-            {bounty.status === "OPEN" ? <span>expires {timeLeft(bounty.expiresAt)}</span> : null}
+            {status === "OPEN" || status === "STALE" ? (
+              <span>expires {timeLeft(bounty.expiresAt)}</span>
+            ) : null}
           </span>
         </div>
       </div>

@@ -14,7 +14,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/*/src/**/*.test.ts"],
+    // apps/app carries its own toolchain, but pure logic under src/lib is
+    // plain TypeScript and belongs in the same run as everything else.
+    include: ["packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
     environment: "node",
   },
 });
